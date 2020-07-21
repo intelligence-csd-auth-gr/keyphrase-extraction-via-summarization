@@ -11,3 +11,7 @@ data_statistics.py -> compute dataset statistics
 crf.py -> an implementation of CRF layer
 
 crf_nlp_architect.py -> an implementation of CRF layer
+
+barplot_keyphrase_counting.html -> schema with statistics of the dataset
+
+bi-lstm-crf_architecture.png -> the architecture schema of the Bi-LSTM-CRF model
