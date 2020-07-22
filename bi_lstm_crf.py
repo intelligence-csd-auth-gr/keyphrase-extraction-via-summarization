@@ -56,11 +56,11 @@ from tf2crf import CRF
 model = Dropout(0.55)(input)
 # recurrent_dropout: 10% possibility to drop of the connections that simulate LSTM memory cells
 model = Bidirectional(LSTM(units=100 // 2, return_sequences=True,  # input_shape=(1, MAX_LEN, VECT_SIZE),
-                           recurrent_dropout=0.1))(model)              # variational biLSTM
+                           recurrent_dropout=0.1))(model)
 model = Dropout(0.55)(model)
 #model = TimeDistributed(Dense(100, activation="relu"))(model)  # a dense layer as suggested by neuralNer
 model = Dense(number_labels, activation=None)(model)
-crf = CRF(number_labels)  # CRF layer, number_labels+1 (+1 -> PAD)
+crf = CRF(number_labels)  # CRF layer
 out = crf(model)  # output
 model = Model(inputs=input, outputs=out)
 
