@@ -1,5 +1,6 @@
 import json
 import string
+import tables
 import numpy as np
 import pandas as pd
 from pandas import json_normalize
@@ -11,13 +12,46 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 pd.set_option('display.max_columns', None)
 
 # ======================================================================================================================
-# Read data file
+# Set batch size and file names in which pre-processed data will be saved
 # ======================================================================================================================
 
-# reading the JSON data using json.load()
-file = 'data/kp20k_training.json'
-# file = 'data/kp20k_testing.json'
-# file = 'data/kp20k_validation.json'
+# reading the initial JSON data using json.load()
+# file = 'data\\kp20k_training.json'  # TRAIN data
+file = 'data\\kp20k_validation.json'  # VALIDATION data to tune model parameters
+# file = 'data\\kp20k_testing.json'  # TEST data to evaluate the final model
+
+'''
+# Define the file paths and names to save TRAIN data
+x_filename = 'data\\preprocessed_data\\x_TRAIN_data_preprocessed'
+y_filename = 'data\\preprocessed_data\\y_TRAIN_data_preprocessed'
+'''
+
+'''
+# Define the file paths and names to save SAMPLE OF TRAIN data
+x_filename = 'data\\preprocessed_data\\dummy_x_train_data_preprocessed'
+y_filename = 'data\\preprocessed_data\\dummy_y_train_data_preprocessed'
+'''
+
+
+# Define the file paths and names to save VALIDATION data to tune model parameters
+x_filename = 'data\\preprocessed_data\\x_VALIDATION_data_preprocessed'
+y_filename = 'data\\preprocessed_data\\y_VALIDATION_data_preprocessed'
+
+
+'''
+# Define the file paths and names to save TEST data to evaluate the final model
+x_filename = 'data\\preprocessed_data\\x_TEST_data_preprocessed'
+y_filename = 'data\\preprocessed_data\\y_TEST_data_preprocessed'
+'''
+
+
+# Define the number of lines to read
+batch_size = 256   # 10000
+
+
+# ======================================================================================================================
+# Read data
+# ======================================================================================================================
 
 json_data = []
 for line in open(file, 'r', encoding="utf8"):
@@ -26,12 +60,7 @@ for line in open(file, 'r', encoding="utf8"):
 # convert json to dataframe
 data = json_normalize(json_data)
 
-# print(data)
-'''
-# get a sample of the whole dataset (for development ONLY)
-data = data.sample(n=1000, random_state=42)
-data.reset_index(inplace=True)  # NEEDED if sample is enabled in order to use enumerate in the for loop below
-'''
+print(data)
 
 '''
 DATA IS ALREADY CLEAN
@@ -39,9 +68,15 @@ DATA IS ALREADY CLEAN
 # Clean missing data
 data = data.dropna()
 data.reset_index(drop=True, inplace=True)  # needed when we sample the data in order to join dataframes
-
 print(data)
 '''
+
+'''
+# get a sample of the whole dataset (for development ONLY)
+data = data.sample(n=1024, random_state=42)
+data.reset_index(inplace=True)  # NEEDED if sample is enabled in order to use enumerate in the for loop below
+'''
+
 
 # ======================================================================================================================
 # Split keyphrases list of keyphrases from string that contains all the keyphrases
@@ -63,24 +98,16 @@ print(punctuation)
 
 # remove special characters and punctuations
 def remove_punct(text):
-    #    print('text', text)
     table = str.maketrans(dict.fromkeys(punctuation))  # OR {key: None for key in string.punctuation}
     clean_text = text.translate(table)
-    #    print('clean_text', clean_text)
-
     return clean_text
 
 
 def keyword_remove_punct(text):
-    #    print('text', text)
     table = str.maketrans(dict.fromkeys(punctuation))  # OR {key: None for key in string.punctuation}
     clean_text = []
     for keyw in text:
-        #        print('keyword', keyw)
         clean_text.append(keyw.translate(table))
-
-    #    print('clean_text', clean_text)
-
     return clean_text
 
 
@@ -108,21 +135,11 @@ print('abstract finish')
 for index, list_of_keyphrases in enumerate(data['keyword']):
     test = []
     for keyphrase in list_of_keyphrases:  # get words of all keyphrases in a single list
-        #        print('keyphrase', keyphrase)
         testing = word_tokenize(keyphrase)
-        #        print('test', testing)
         for keyword in testing:
             test.append(keyword)
-    #    print('LIST',test)
     test = set(test)  # keep only the unique words
-    #    print('SET',test)
-    '''
-    test = []
-    for keyphrase in list_of_keyphrases:
-        test.append(word_tokenize(keyphrase))
-    '''
     data['keyword'].iat[index] = test
-# print('data', data)
 
 
 '''
@@ -136,6 +153,7 @@ test = data['keyword'].apply(sent_tokenize)
 print(test)
 print(data)
 '''
+
 
 # ======================================================================================================================
 # GloVe vectors
@@ -162,9 +180,7 @@ def get_glove_vec(word_vec):
     :return: the GloVe vector of given word
     '''
     if word_vec == 'PADDING_VALUE':  # return the padding vector (size=100)
-        # (4, 25)
         padding_vector = np.zeros(100, dtype='float64')  # create a vector of zeros' to use as padding value
-        print(padding_vector)
         return padding_vector  # np.array(padding_vector, dtype='float64')
 
     embedding_vector = glove_model.get(word_vec)  # get the vector of a word, if exists
@@ -198,10 +214,10 @@ def get_glove_vec(word_vec):
                       1.00092500e-01, 6.39176890e-02, 5.10458164e-02, 8.40307549e-02,
                       1.05783986e-02, 2.15598941e-01, -1.54302031e-01, 1.49716333e-01]
         return np.array(avg_vector, dtype='float64')  # return the average vector of all word vectors of GloVe
-    # return glove_model[word_vec]
 
 
-'''   # Get the average vector of all GloVe vectors
+'''   
+# Get the average vector of all GloVe vectors
 
 # Get number of vectors and hidden dim
 with open(gloveFile, 'r', encoding="utf8") as f:
@@ -220,83 +236,146 @@ average_vec = np.mean(vecs, axis=0)
 print('average_vec: ', average_vec)
 '''
 
+
 # ======================================================================================================================
 # Get the GloVe representation of documents
 # ======================================================================================================================
 
-# Convert each abstract to list of GloVe vectors
+# Convert each title and abstract to list of GloVe vectors
 X = []
-for abstract in data['abstract']:
-    abstract_vectors = []
-    for word in abstract:
-        # print(get_glove_vec(word))
+for index, abstract in enumerate(data['abstract']):
+    abstract_vectors = []  # saves GloVe vectors for one title + abstract
+
+    # convert words in title to GloVe vectors
+    for word in data['title'][index]:
         abstract_vectors.append(get_glove_vec(word))
+
+    # convert words in abstract to GloVe vectors
+    for word in abstract:
+        abstract_vectors.append(get_glove_vec(word))
+
+    # save GloVe vectors for each title + abstract
     X.append(abstract_vectors)
-
-# X = [[get_glove_vec(word) for word in abstract] for abstract in data['abstract']]
-
-# print('THIS IS X BEFORE', np.array(X))
-print('PASSED X BEFORE')
 
 
 # ======================================================================================================================
-# Give labels to each word of Abstract - keyword (KP) or Non-keyword (Non-KP)
+# Give labels to each word of Title and Abstract - keyword (KP) or Non-keyword (Non-KP)
 # ======================================================================================================================
 
 # Convert Tag/Label to tag_index
 y = []  # list of lists that contain the labels (keyword (KP), Non-keyword (Non-KP)) for each word of the abstract
 for index, abstract in enumerate(data['abstract']):
-    abstract_word_labels = []  # keep the labels of the all the words contained in a single abstract text
+    abstract_word_labels = []  # keep the labels of the all the words contained in a single title and abstract text
+
+    # add labels for words in title
+    for word in data['title'][index]:
+        if word in data['keyword'][index]:  # the word is a keyphrase
+            abstract_word_labels.append(1)
+        else:  # the word is not a keyphrase
+            abstract_word_labels.append(0)
+
+    # add labels for words in abstract
     for word in abstract:
         if word in data['keyword'][index]:  # the word is a keyphrase
             abstract_word_labels.append(1)
         else:  # the word is not a keyphrase
             abstract_word_labels.append(0)
+
+    # save labels for each title + abstract
     y.append(abstract_word_labels)
-    # data['labels'].iat[index] = abstract_word_labels  # add column labels that contain all the labels of abstract
-print('THIS IS Y BEFORE', y)
 
 
 # ======================================================================================================================
 # Necessary pre-processing for Bi-LSTM (in general for neural networks)
 # ======================================================================================================================
 
-# Padding each sentence to have the same length - padding values are padded to the end
-# sequences: List of sequences (each sequence is a list of integers)
-# maxlen: maximum length of all sequences. If not provided, sequences will be padded to the length of the longest individual sequence.
-# padding: 'pre' or 'post' (optional, defaults to 'pre'): pad either before or after each sequence
-# value: Float or String, padding value (defaults to 0) - the value that will be added to pad the sequences/texts
-X = pad_sequences(sequences=X, padding="post", value=get_glove_vec("PADDING_VALUE"))  # maxlen=MAX_LEN
+# Find the maximum length of abstract in the whole dataset
+# Max length of abstract (2871)
+# Max length of title and abstract (2881)
+# max_len = max(data['abstract'].apply(len))  # Max length of abstract
+print('X SHAPE', pd.DataFrame(X).shape)  # Max length of title and abstract
 
-# print('THIS IS X AFTER', X)
+# Maximum length of abstract in the TRAIN data
+max_len = 2881  # Used to match the data dimensions for both TRAIN and TEST data
+print("Maximum length of title and abstract in the whole dataset", max_len)
+
+for i in range(0, len(X), batch_size):
+    '''
+    Split the non padded data in batches and iterate through each batch in order to pad_sequences. In each new
+    iteration the data produced by pad_sequences are saved in file and the next batch is loaded in the place of the
+    previous in order to release memory.
+    '''
+
+    # Padding each sentence to have the same length - padding values are padded to the end
+    # sequences: List of sequences (each sequence is a list of integers)
+    # maxlen: maximum length of all sequences. If not provided, sequences will be padded to the length of the longest individual sequence.
+    # padding: 'pre' or 'post' (optional, defaults to 'pre'): pad either before or after each sequence
+    # value: Float or String, padding value (defaults to 0) - the value that will be added to pad the sequences/texts
+    X_batch = pad_sequences(sequences=X[i:i + batch_size], padding="post", maxlen=max_len, value=get_glove_vec("PADDING_VALUE"))
 
 
-# Padding each sentence to have the same length - padding values are padded to the end
-# value: padding value is set to 0, because the padding value CANNOT be a keyphrase
-y = pad_sequences(sequences=y, padding="post", value=0)  # maxlen=MAX_LEN
+    # Padding each sentence to have the same length - padding values are padded to the end
+    # value: padding value is set to 0, because the padding value CANNOT be a keyphrase
+    y_batch = pad_sequences(sequences=y[i:i + batch_size], padding="post", maxlen=max_len, value=0)
 
-# print('THIS IS Y AFTER', y)
-
-# REQUIRED - transform y to categorical (each column is a value of y - like in one-hot-encoding, columns are the vocabulary)
-y = [to_categorical(i, num_classes=2, dtype='int8') for i in y]
-# y = to_categorical(y, num_classes=2, dtype='float32')
-print(y)
-# print(y.shape)
-print('After processing, sample:', X[0])
-print('After processing, labels:', y[0])
+    print('X SHAPE AFTER', np.array(X_batch, dtype=object).shape)
+    print('y SHAPE AFTER', np.array(y_batch, dtype=object).shape)
 
 
 # ======================================================================================================================
-# Write pre-processed data to csv file
+# Convert y values to CATEGORICAL
 # ======================================================================================================================
 
-# write pre-processed data to file
-np.save('data\preprocessed_data\x_train_data_preprocessed', X)
-np.save('data\preprocessed_data\y_train_data_preprocessed', y)
+    # REQUIRED - transform y to categorical (each column is a value of y - like in one-hot-encoding, columns are the vocabulary)
+    y_batch = [to_categorical(i, num_classes=2, dtype='int8') for i in y_batch]
 
-# read pre-processed data from file
-x = np.load('data\preprocessed_data\x_train_data_preprocessed.npy')
-y = np.load('data\preprocessed_data\y_train_data_preprocessed.npy')
+    #print(y)
 
-print(x)
-print(y)
+    #print('After processing, sample:', X[0])
+#    print('After processing, labels:', y_batch[0])
+    print('y SHAPE AFTER', np.array(y_batch, dtype=object).shape)
+    #print('X SHAPE AFTER', np.array(X_batch, dtype=object).shape)
+
+
+# ======================================================================================================================
+# Write pre-processed TRAIN data to csv file
+# ======================================================================================================================
+
+    # Set the compression level
+    filters = tables.Filters(complib='blosc', complevel=5)
+
+    # Save X batches into file
+    f = tables.open_file(x_filename+'.hdf', 'a')
+    ds = f.create_carray('/', 'x_data'+str(i), obj=X_batch, filters=filters,)
+    ds[:] = X_batch
+    print(ds)
+    f.close()
+
+    # Save y batches into file
+    f = tables.open_file(y_filename + '.hdf', 'a')
+    ds = f.create_carray('/', 'y_data' + str(i), obj=y_batch, filters=filters)
+    ds[:] = y_batch
+    f.close()
+
+
+    # free memory here in order to allow for bigger batches (not needed, but allows for bigger sized batches)
+    X_batch = None
+    y_batch = None
+
+
+# ======================================================================================================================
+# Read data in chunks
+# ======================================================================================================================
+
+# Read X batches from file (pre-processed)
+with tables.File(x_filename+'.hdf', 'r') as h5f:
+    x = h5f.get_node('/x_data'+str(1792)).read()  # get a specific chunk of data
+    print(x)
+    print('X SHAPE AFTER', np.array(x, dtype=object).shape)
+
+
+# Read y batches from file (pre-processed)
+with tables.File(y_filename+'.hdf', 'r') as h5f:
+    y = h5f.get_node('/y_data'+str(1792)).read()  # get a specific chunk of data
+    print(y)
+    print('y SHAPE AFTER', np.array(y, dtype=object).shape)
