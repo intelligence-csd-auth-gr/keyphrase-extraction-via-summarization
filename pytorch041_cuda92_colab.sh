@@ -36,7 +36,7 @@ echo -e $TEXT_YELLOW
 echo 'pip fininshed installing PyTorch 0.4.1 with CUDA 9.2 backend..'
 echo -e $TEXT_RESET
 
-pip install torchvision
+pip install torchvision==0.2.1
 echo -e $TEXT_YELLOW
-echo 'pip finished installing torchvision==0.2.1..'
+echo 'pip finished installing torchvision..'
 echo -e $TEXT_RESET
