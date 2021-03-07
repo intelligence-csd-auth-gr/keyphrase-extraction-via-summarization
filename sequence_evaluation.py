@@ -44,13 +44,8 @@ def evaluation(y_pred, pad_length, y_test_filename='data\\preprocessed_data\\y_T
         '''
         preds = []
         for abstract_preds in all_abstract_preds:
-            doc_preds = [np.argmax(word_pred) for word_pred in abstract_preds]
-            '''
-            for word_pred in abstract_preds:
-                # the position of the max value is corresponding to the actual label value (0: Non-KP, 1: KP)
-                doc_preds.append(1 if np.argmax(word_pred) else 0)
-            '''
-            preds.append(doc_preds)
+            # the position of the max value is corresponding to the actual label value (0: Non-KP, 1: KP)
+            preds.append([np.argmax(word_pred) for word_pred in abstract_preds])
         return preds
 
     # print('BEFORE y_pred', y_pred)
@@ -108,7 +103,18 @@ def evaluation(y_pred, pad_length, y_test_filename='data\\preprocessed_data\\y_T
     # ======================================================================================================================
 
     # pos_label: the label that the score is reported for (KP - keyphrase label is selected as it is more important)
-    print("recall for label KP: {:.2%}".format(recall_score(y_test, y_pred, pos_label=1)))
-    print("precision for label KP: {:.2%}".format(precision_score(y_test, y_pred, pos_label=1)))
+    print("\nSequence evaluation")
+    print("Precision for label KP: {:.2%}".format(precision_score(y_test, y_pred, pos_label=1)))
+    print("Recall for label KP: {:.2%}".format(recall_score(y_test, y_pred, pos_label=1)))
     print("F1-score for label KP: {:.2%}".format(f1_score(y_test, y_pred, pos_label=1)))
 
+    print("\nAvg Precision for both labels: {:.2%}".format(precision_score(y_test, y_pred, average='macro')))
+    print("Avg Recall for both labels: {:.2%}".format(recall_score(y_test, y_pred, average='macro')))
+    print("Avg F1-score for both labels: {:.2%}".format(f1_score(y_test, y_pred, average='macro')))
+    '''
+    with open("pretrained_models\\Results.txt", "a") as myfile:  # Write above print into output file
+        myfile.write("\nSequence evaluation\n")
+        myfile.write("Precision for label KP: {:.2%}".format(precision_score(y_test, y_pred, pos_label=1)) + '\n')
+        myfile.write("Recall for label KP: {:.2%}".format(recall_score(y_test, y_pred, pos_label=1)) + '\n')
+        myfile.write("F1-score for label KP: {:.2%}".format(f1_score(y_test, y_pred, pos_label=1)) + '\n')
+    '''

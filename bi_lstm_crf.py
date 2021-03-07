@@ -1,3 +1,4 @@
+import time
 import tables  # load compressed data files
 import numpy as np
 import pandas as pd
@@ -9,6 +10,7 @@ import tensorflow as tf
 import keras.backend as K
 import sequence_evaluation
 import traditional_evaluation
+from datetime import timedelta
 import matplotlib.pyplot as plt
 from tensorflow import constant  # used to convert array/list to a Keras Tensor
 from keras.optimizers import SGD
@@ -17,32 +19,83 @@ from sklearn.metrics import f1_score
 from keras.optimizers import RMSprop
 from keras.models import Model, Input
 from keras.callbacks import TensorBoard
+from data_generator import DataGenerator
 from keras.callbacks import LearningRateScheduler
 from keras.optimizers.schedules import ExponentialDecay, InverseTimeDecay
 from keras.layers import LSTM, Embedding, Dense, TimeDistributed, Dropout, Bidirectional
 
 
-
 pd.set_option('display.max_columns', None)
 
 
+# count the running time of the program
+start_time = time.time()
+
+import os
+# disable tensorflow GPU
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+'''
+# set memory growth for GPUs True
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+  try:
+    for gpu in gpus:
+      tf.config.experimental.set_memory_growth(gpu, True)
+  except RuntimeError as e:
+    print(e)
+'''
+
+'''
+devices = tf.config.experimental.list_physical_devices('GPU')
+tf.config.experimental.set_memory_growth(devices[0], True)
+
+
+tf.config.gpu.set_per_process_memory_fraction(0.75)
+tf.config.gpu.set_per_process_memory_growth(True)
+
+
+gpus = tf.config.experimental.list_physical_devices('GPU')
+tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=3,072)])
+
+
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
+config = ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.2
+config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
+'''
 # ======================================================================================================================
 # Set data generators for batch training
 # ======================================================================================================================
 
-# Set batch size, and, the train and test data size
-batch_size = 1024  # set during pre-processing (set in file preprocessing.py)
-train_data_size = 530809  # 4147964 [ THE NUMBER OF TRAIN SENTENCES\DOCS ]  # the total size of train data
-validation_data_size = 20000  # 156836  [ THE NUMBER OF VALIDATION SENTENCES\DOCS ]  # the total size of test data
-test_data_size = 20000  # 156085 SEE BELOW [ THE NUMBER OF TEST SENTENCES\DOCS ]  # the total size of test data
+sentence_model = False  # True  False
+
+if sentence_model:
+    # Set batch size, train and test data size
+    batch_size = 256#352#224  # 1024  # set during pre-processing (set in file preprocessing.py)
+    train_data_size = 4136306#4139868  # 4147964  [ THE NUMBER OF TRAIN SENTENCES\DOCS ]  # the total size of train data
+    validation_data_size = 156519#156836  # 156836  [ THE NUMBER OF VALIDATION SENTENCES\DOCS ]  # the total size of test data
+    test_data_size = 155801#156085  # 156085  SEE BELOW [ THE NUMBER OF TEST SENTENCES\DOCS ]  # the total size of test data
+
+    # Set INPUT layer size
+    MAX_LEN = 40#50  # 70  # max length of abstract and title (together) (full text train set: 2763)
+else:
+    # Set batch size,train and test data size
+    batch_size = 64 #32  # 1024  # set during pre-processing (set in file preprocessing.py)
+    train_data_size = 530390 #530809  # 530880  [ THE NUMBER OF TRAIN SENTENCES\DOCS ]  # the total size of train data
+    validation_data_size = 20000  # 20064  # 20000  [ THE NUMBER OF VALIDATION SENTENCES\DOCS ]  # the total size of test data
+    test_data_size = 20000  # 20064  # 20000  SEE BELOW [ THE NUMBER OF TEST SENTENCES\DOCS ]  # the total size of test data
+
+    # Set INPUT layer size
+    MAX_LEN = 400  # 500  # 70  # max length of abstract and title (together) (full text train set: 2763)
 
 
-# Set INPUT and OUTPUT layer size
-MAX_LEN = 500  # 70  # max length of abstract and title (together) (full text train set: 2763)
+# Set embedding size, OUTPUT layer size
 VECT_SIZE = 100  # the GloVe vector size
 number_labels = 2  # 2 labels, keyword (KP) and Non-keyword (Non-KP)
 
-doc_vocab = 323895  # 100003  # the vocabulary of the train dataset
+doc_vocab = 321352#321490    #298383  # 344858    # 323895    # 100003  # the vocabulary of the train dataset
 
 print('MAX_LEN of text', MAX_LEN)
 print('VECT_SIZE', VECT_SIZE)
@@ -53,7 +106,7 @@ print('VOCABULARY', doc_vocab)
 # Define train/test data file names
 # ======================================================================================================================
 
-# [FULL ABSTRACT TEXT - train_data_size = 530809] Define the file paths and names for TRAINING data
+# [FULL ABSTRACT TEXT - train_data_size = 530390] Define the file paths and names for TRAINING data
 x_train_filename = 'data\\preprocessed_data\\x_TRAIN_data_preprocessed.hdf'
 y_train_filename = 'data\\preprocessed_data\\y_TRAIN_data_preprocessed.hdf'
 
@@ -62,11 +115,11 @@ x_validate_filename = 'data\\preprocessed_data\\x_VALIDATION_data_preprocessed.h
 y_validate_filename = 'data\\preprocessed_data\\y_VALIDATION_data_preprocessed.hdf'
 
 '''
-# [SENTENCES ABSTRACT TEXT - train_data_size = 4147964] Define the file paths and names for TRAINING data
+# [SENTENCES ABSTRACT TEXT - train_data_size = 4136306] Define the file paths and names for TRAINING data
 x_train_filename = 'data\\preprocessed_data\\x_TRAIN_SENTENC_data_preprocessed.hdf'
 y_train_filename = 'data\\preprocessed_data\\y_TRAIN_SENTENC_data_preprocessed.hdf'
 
-# [SENTENCES ABSTRACT TEXT - validation_data_size = 156836] Define the file paths and names for VALIDATION data to tune model parameters
+# [SENTENCES ABSTRACT TEXT - validation_data_size = 156519] Define the file paths and names for VALIDATION data to tune model parameters
 x_validate_filename = 'data\\preprocessed_data\\x_VALIDATION_SENTENC_data_preprocessed.hdf'
 y_validate_filename = 'data\\preprocessed_data\\y_VALIDATION_SENTENC_data_preprocessed.hdf'
 '''
@@ -101,7 +154,7 @@ y_filename = 'data\\preprocessed_data\\full_abstract\\y_ACM_FULL_ABSTRACT_prepro
 
 # Sentences abstract
 '''
-# [ test_data_size = 156085 ]
+# [ test_data_size = 155801 ]
 x_test_filename = 'data\\preprocessed_data\\x_TEST_SENTENC_data_preprocessed.hdf'  # kp20k
 y_test_filename = 'data\\preprocessed_data\\y_TEST_SENTENC_data_preprocessed'
 x_filename = 'data\\preprocessed_data\\x_TEST_SENTENC_preprocessed_TEXT'  # kp20k
@@ -138,6 +191,22 @@ x_filename = 'data\\preprocessed_data\\sentence_fulltext\\x_ACM_SENTENC_FULLTEXT
 y_filename = 'data\\preprocessed_data\\sentence_fulltext\\y_ACM_SENTENC_FULLTEXT_preprocessed_TEXT'
 '''
 
+
+# Paragraphs fulltext
+'''
+# [ test_data_size = 8804 ]
+x_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_NUS_PARAGRAPH_FULLTEXT_TEST_data_preprocessed.hdf'
+y_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_NUS_PARAGRAPH_FULLTEXT_TEST_data_preprocessed'
+x_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_NUS_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
+y_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_NUS_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
+'''
+'''
+# [ test_data_size = 99432 ]
+x_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_ACM_PARAGRAPH_FULLTEXT_TEST_data_preprocessed.hdf'
+y_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_ACM_PARAGRAPH_FULLTEXT_TEST_data_preprocessed'
+x_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_ACM_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
+y_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_ACM_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
+'''
 
 # ======================================================================================================================
 # Read train data
@@ -206,15 +275,17 @@ def load_data(x_filename, y_filename, batch_number):
     if 'TRAIN' in x_filename:  # for training return class weights as well
         """
             # FULL ABSTRACT
-            KP count:  3876504 
-            NON-KP count:  79634175
+            KP count:  3887080 (78315988 / 3887080 = 20.14)
+            KP WORDS count:  6590980 (78315988 / 6590980 = 11.88)
+            NON-KP count:  78315988
             
             # SENTENCES
-            KP count:  3873971 
-            NON-KP count:  79557044
+            KP count:  3863958  (77728129 / 3863958 = 20.11)
+            KP WORDS count:  6534606  (77728129 / 6534606 = 11.89)
+            NON-KP TEST count:  77728129
         """
-        # The weight of label 0 (Non-KP) is 1 and the weight of class 1 (KP) is the number of occurences of class 0 (79634175 / 3883863 = 20.54)
-        sample_weights = [[1 if label[0] else 20.54 for label in instance] for instance in y]  # shape (1024, 3022)
+        # The weight of label 0 (Non-KP) is 1 and the weight of class 1 (KP) is the number of occurences of class 0 (78315988 / 6590980 = 11.88)
+        sample_weights = [[1 if label[0] else 11.88 for label in instance] for instance in y]
         print('class_weights', np.array(sample_weights, dtype=float).shape)
         return x, constant(y), np.array(sample_weights, dtype=float)  # (inputs, targets, sample_weights)
     '''
@@ -238,12 +309,16 @@ test_steps = np.ceil(test_data_size/batch_size)  # number of validation and test
 print('steps_per_epoch', steps_per_epoch)
 print('validation_steps', validation_steps)
 print('test_steps', test_steps)
-
+'''
 # (number of batches) -1, because batches start from 0
 training_batch_generator = batch_generator(x_train_filename, y_train_filename, batch_size, steps_per_epoch - 1)  # training batch generator
 validation_batch_generator = batch_generator(x_validate_filename, y_validate_filename, batch_size, validation_steps - 1)  # validation batch generator
 test_batch_generator = batch_generator(x_test_filename, '', batch_size, test_steps - 1)  # testing batch generator
-
+'''
+# Generators
+training_generator = DataGenerator(x_train_filename, y_train_filename, steps_per_epoch, batch_size=batch_size, shuffle=False)
+validation_generator = DataGenerator(x_validate_filename, y_validate_filename, validation_steps, batch_size=batch_size, shuffle=False)
+test_generator = DataGenerator(x_test_filename, '', test_steps, batch_size=batch_size, shuffle=False)
 
 # ======================================================================================================================
 # Define f1-score to monitor during training and save the best model with Checkpoint
@@ -293,7 +368,7 @@ class f1score(keras.metrics.Metric):
 '''
 
 
-def load_y_test(y_file_name, batch_size, number_of_batches):
+def load_y_val(y_file_name, batch_size, number_of_batches):
     """
     Load y_test for validation
     :param y_file_name: the file name that contains pre-processed data of y_test
@@ -301,20 +376,20 @@ def load_y_test(y_file_name, batch_size, number_of_batches):
     :param number_of_batches: the total number of batches
     :return: return y_test (y_test_flat) for validation
     """
-    y_test_batches = []  # save y_test for validation
+    y_val_batches = []  # save y_test for validation
     current_batch_number = 0  # the identifier used for each batch of data (ex. 0, 10000, 20000, 30000, etc.)
     while True:
         # Read X batches for testing from file (pre-processed)
         with tables.File(y_file_name, 'r') as h5f:
-            y_test_batches.append(h5f.get_node('/y_data' + str(current_batch_number)).read())  # get a specific chunk of data
+            y_val_batches.append(h5f.get_node('/y_data' + str(current_batch_number)).read())  # get a specific chunk of data
 
         # calculate the identifier of each batch of data
         if current_batch_number < batch_size * number_of_batches:
             current_batch_number += batch_size
         else:
-            y_test_flat = [y_label for y_batch in y_test_batches for y_label in y_batch]  # flatten the y_test (20000, 2881, 2)
-            print('y_test SHAPE AFTER', np.array(y_test_flat, dtype=object).shape)
-            return y_test_flat
+            y_val_flat = [y_label for y_batch in y_val_batches for y_label in y_batch]  # flatten the y_test (20000, 2881, 2)
+            print('y_test SHAPE AFTER', np.array(y_val_flat, dtype=object).shape)
+            return y_val_flat
 
 
 def pred2label(all_abstract_preds):
@@ -327,23 +402,23 @@ def pred2label(all_abstract_preds):
     '''
     preds = []
     for abstract_preds in all_abstract_preds:
-        for word_pred in abstract_preds:
-            # the position of the max value is corresponding to the actual label value (0: Non-KP, 1: KP)
-            preds.append(np.argmax(word_pred))
+        # the position of the max value is corresponding to the actual label value (0: Non-KP, 1: KP)
+        preds.extend([np.argmax(word_pred) for word_pred in abstract_preds])
     return preds
 
 
-y_test = load_y_test(y_validate_filename, batch_size, validation_steps - 1)  # load y_test in memory
-y_test = pred2label(y_test)  # convert y_test from categorical (two columns, 1 for each label) to a single value label
+y_val = load_y_val(y_validate_filename, batch_size, validation_steps - 1)  # load y_test in memory
+y_val = pred2label(y_val)  # convert y_test from categorical (two columns, 1 for each label) to a single value label
 
 
 class PredictionCallback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
-        y_pred = self.model.predict(x=validation_batch_generator, steps=validation_steps)  # steps=validation_steps, because it does not read the last batch
+        # y_pred = self.model.predict(x=validation_batch_generator, steps=validation_steps)  # steps=validation_steps, because it does not read the last batch
+        y_pred = self.model.predict(x=validation_generator)
         y_pred = pred2label(y_pred)  # convert y_test from categorical (two columns, 1 for each label) to a single value label
         # print("Epoch: {} F1-score: {:.2%}".format(epoch, f1_score(y_test, y_pred, pos_label=1)))
-        logs.update({'val_f1score': f1_score(y_test, y_pred, pos_label=1)})
+        logs.update({'val_f1score': f1_score(y_val, y_pred, pos_label=1)})
    #     logs['val_f1score'] = f1_score(y_test, y_pred, pos_label=1)
         super().on_epoch_end(epoch, logs)
 
@@ -363,7 +438,8 @@ print(embedding_matrix)
 # ======================================================================================================================
 # Bi-LSTM-CRF
 # ======================================================================================================================
-
+from keras.regularizers import l1
+from keras.constraints import max_norm
 # Model definition
 inpt = Input(shape=(MAX_LEN,))  # MAX_LEN, VECT_SIZE
 # input_dim: Size of the vocabulary, i.e. maximum integer index + 1
@@ -373,15 +449,27 @@ inpt = Input(shape=(MAX_LEN,))  # MAX_LEN, VECT_SIZE
 # doc_vocab: vocabulary - number of words - of the train dataset
 model = Embedding(doc_vocab, output_dim=100, input_length=MAX_LEN,  # n_words + 2 (PAD & UNK)
                   weights=[embedding_matrix],  # use GloVe vectors as initial weights
-                  mask_zero=True, trainable=True)(inpt)  # name='word_embedding'
+                  mask_zero=True, trainable=True, activity_regularizer=l1(0.00000001))(inpt)  # name='word_embedding'
+
+
+# 000001 00000001  [ TRASH - UNSTABLE ]
+# 000001 0000001  [ TRASH - UNSTABLE ]
+# 0000001 000000001  [ TRASH - UNSTABLE ]
+
+# 00000001 0000000001  [BEST 32.32 + 21.58]
+# 00000001 000000001   [MEDIUM 35.54 + 13.77]
+# 0000001 0000000001     [MEDIUM 31.94 + 21.13]
+
+# 000000001 00000000001  [ TRASH ]
+# 000000001 0000000001  [ TRASH ]
 
 # recurrent_dropout=0.1 (recurrent_dropout: 10% possibility to drop of the connections that simulate LSTM memory cells)
 # units = 100 / 0.55 = 182 neurons (to account for 0.55 dropout)
-model = Bidirectional(LSTM(units=100, return_sequences=True))(model)  # input_shape=(1, MAX_LEN, VECT_SIZE)
-model = Dropout(0.3)(model)  # 0.5
+model = Bidirectional(LSTM(units=100, return_sequences=True, activity_regularizer=l1(0.0000000001), recurrent_constraint=max_norm(2)))(model)  # input_shape=(1, MAX_LEN, VECT_SIZE)
+# model = Dropout(0.3)(model)  # 0.5
 # model = TimeDistributed(Dense(number_labels, activation="relu"))(model)  # a dense layer as suggested by neuralNer
 model = Dense(number_labels, activation=None)(model)  # activation='linear' (they are the same)
-crf = CRF(number_labels)  # CRF layer { SHOULD I SET -> number_labels+1 (+1 -> PAD) }
+crf = CRF()  # CRF layer { SHOULD I SET -> number_labels+1 (+1 -> PAD) }
 out = crf(model)  # output
 model = Model(inputs=inpt, outputs=out)
 
@@ -393,7 +481,6 @@ model = Model(inputs=inpt, outputs=out)
 
 # learning rate schedule
 def step_decay(epoch):
-
     initial_lrate = 0.01
     drop = 0.5
     # epochs_drop = 1.0  # how often to change the learning rate
@@ -404,8 +491,45 @@ def step_decay(epoch):
     lrate = lrate[epoch]
     '''
     return lrate
+'''
+Exact Match
+Precision: 0.3457
+Recall: 0.0407
+F1-score: 0.0728
+
+Partial Match
+Precision: 0.5338
+Recall: 0.1009
+F1-score: 0.1698
+
+recall for label KP: 9.54%
+precision for label KP: 52.35%
+F1-score for label KP: 16.14%
+f1-score after each epoch:  [0.049323208412881514, 0.022992335888037316]
+learning rate after each epoch:  [0.1, 0.033333335]
 
 
+
+clipvalue=10.0
+Exact Match
+Precision: 0.2971
+Recall: 0.0218
+F1-score: 0.0406
+
+Partial Match
+Precision: 0.5121
+Recall: 0.0640
+F1-score: 0.1137
+
+recall for label KP: 6.04%
+precision for label KP: 50.25%
+F1-score for label KP: 10.78%
+f1-score after each epoch:  [0.07219984791731207, 0.018671145253423733]
+learning rate after each epoch:  [0.01, 0.006666667]
+'''
+# 16588/16588 - 5128s - loss: 56.9070 - accuracy: 0.8656 - val_loss: 505.4428 - val_accuracy: 0.9229 - lr-SGD: 0.0067
+# 16588/16588 - 6098s - loss: 47.0422 - accuracy: 0.8756 - val_loss: 1403.2142 - val_accuracy: 0.9229 - lr-SGD: 0.0050
+# 16588/16588 - 5615s - loss: 38.4642 - accuracy: 0.8823 - val_loss: 1716.1786 - val_accuracy: 0.9229 - lr-SGD: 0.0040
 lrate = LearningRateScheduler(step_decay)
 
 #2 F1-score: 0.2080 + 30 + 0.22
@@ -416,7 +540,7 @@ lrate = LearningRateScheduler(step_decay)
 # CASE 1: decay=0.01
 # CASE 2: decay=0.1/5
 opt = SGD(learning_rate=0.0, momentum=0.9, clipvalue=5.0)  # clipvalue (Gradient Clipping): clip the gradient to [-5 to 5]
-#opt = SGD(learning_rate=0.05, decay=0.01, momentum=0.9, clipvalue=3.0, clipnorm=1.0)  # clipvalue (Gradient Clipping): clip the gradient to [-5 to 5]
+#opt = SGD(learning_rate=0.01, decay=0.01/steps_per_epoch, momentum=0.9, clipvalue=10.0)  # clipvalue (Gradient Clipping): clip the gradient to [-5 to 5]
 # opt = SGD(learning_rate=lr_rate, clipvalue=3.0, clipnorm=2.0, momentum=0.9)  # clipvalue (Gradient Clipping): clip the gradient to [-5 to 5]
 
 # compile Bi-LSTM-CRF
@@ -460,9 +584,15 @@ my_callbacks = [
 
 
 # Train model
+'''
 history = model.fit(x=training_batch_generator, steps_per_epoch=steps_per_epoch,
                     validation_data=validation_batch_generator, validation_steps=validation_steps - 1,  # -1, because it reads more times than actual needed
+                    epochs=1, callbacks=my_callbacks, verbose=2)
+'''
+history = model.fit(x=training_generator,
+                    validation_data=validation_generator,
                     epochs=5, callbacks=my_callbacks, verbose=2)
+
 
 # [MANDATORY] Convert data to either a Tensorflow tensor (for CRF layer) or a numpy array
 # y_train = constant(y_train)  # convert array/list to a Keras Tensor
@@ -474,25 +604,12 @@ print('AFTER TRAINING', model.get_weights())
 
 
 # ======================================================================================================================
-# Track model loss per epoch
-# ======================================================================================================================
-
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.title('model loss')
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['train', 'test'], loc='upper left')
-# plt.show()
-plt.savefig('pretrained_models\\model_loss_per_epoch.png')  # save the plot of model's loss per epoch to file
-
-
-# ======================================================================================================================
 # Predict on validation data
 # ======================================================================================================================
 
 print('\nPredicting...')
-y_pred = model.predict(x=test_batch_generator, steps=test_steps)  # steps=validation_steps, because it does not read the last batch
+# y_pred = model.predict(x=test_batch_generator, steps=test_steps)  # steps=validation_steps, because it does not read the last batch
+y_pred = model.predict(x=test_generator)
 print(y_pred)
 print('\nY_PRED SHAPE', np.array(y_pred, dtype=object).shape)
 
@@ -502,13 +619,10 @@ print('\nY_PRED SHAPE', np.array(y_pred, dtype=object).shape)
 # ======================================================================================================================
 
 # traditional evaluation the model's performance
-traditional_evaluation.evaluation(y_pred, x_filename, y_filename)
+traditional_evaluation.evaluation(y_pred=y_pred, x_filename=x_filename, y_filename=y_filename)
 
 # sequence evaluation of the model's performance
 sequence_evaluation.evaluation(y_pred, MAX_LEN, y_test_filename)
-
-print('f1-score after each epoch: ', history.history['val_f1score'])
-print('learning rate after each epoch: ', history.history['lr'])
 
 
 # ======================================================================================================================
@@ -537,6 +651,51 @@ model.save('pretrained_models\\fulltext_bi_lstm_crf_dense_linear.h5')  # sentenc
 from keras.models import load_model
 model = load_model('pretrained_models\\fulltext_bi_lstm_crf_dense_linear.h5', custom_objects={'CRF': CRF(number_labels), 'num_classes': number_labels})  #  , 'loss': crf.loss, 'metrics': [crf.accuracy]
 '''
+
+
+# ======================================================================================================================
+# Count the total running time
+# ======================================================================================================================
+
+total_time = str(timedelta(seconds=(time.time() - start_time)))
+print("\n--- %s running time ---" % total_time)
+
+
+# ======================================================================================================================
+# Track model loss per epoch
+# ======================================================================================================================
+
+with open("pretrained_models\\Results.txt", "a") as myfile:  # Write above print into output file
+    myfile.write("f1-score after each epoch: " + str(history.history['val_f1score']) + '\n')
+    myfile.write("learning rate after each epoch: " + str(history.history['lr']))
+
+print('\nf1-score after each epoch: ', history.history['val_f1score'])
+print('learning rate after each epoch: ', history.history['lr'])
+print('loss: ', history.history['loss'])
+print('accuracy: ', history.history['accuracy'])
+print('val_loss: ', history.history['val_loss'])
+print('val_accuracy: ', history.history['val_accuracy'])
+
+
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+# plt.show()
+plt.savefig('pretrained_models\\model_loss_per_epoch.png')  # save the plot of model's loss per epoch to file
+
+
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+# plt.show()
+plt.savefig('pretrained_models\\model_accuracy_per_epoch.png')  # save the plot of model's loss per epoch to file
+
 
 # ======================================================================================================================
 # Plot the layer architecture of LSTM
