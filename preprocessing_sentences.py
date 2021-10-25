@@ -72,21 +72,6 @@ data = json_normalize(json_data)
 
 print(data)
 
-'''
-DATA IS ALREADY CLEAN
-
-# Clean missing data
-data = data.dropna()
-data.reset_index(drop=True, inplace=True)  # needed when we sample the data in order to join dataframes
-print(data)
-'''
-
-'''
-# get a sample of the whole dataset (for development ONLY)
-data = data.sample(n=1024, random_state=42)
-data.reset_index(inplace=True)  # NEEDED if sample is enabled in order to use enumerate in the for loop below
-'''
-
 
 # ======================================================================================================================
 # Split keyphrases list of keyphrases from string that contains all the keyphrases
@@ -105,7 +90,6 @@ for index, abstract in enumerate(data['abstract']):
     title_abstract = data['title'][index] + '. ' + abstract  # combine title + abstract
     # remove '\n'
     title_abstract = title_abstract.replace('\n', ' ')
-#    print('title_abstract_mainBody', title_abstract)
 
     data['abstract'].iat[index] = title_abstract
 
@@ -133,12 +117,6 @@ if x_filename == 'data\\preprocessed_data\\x_TEST_SENTENC_data_preprocessed':  #
 
 # reset index as explode results in multiple rows having the same index
 data.reset_index(drop=True, inplace=True)
-
-'''
-print(data)
-import sys
-sys.exit()  # terminate program to save the number of total documents-rows-sentences
-'''
 
 
 # ======================================================================================================================
@@ -196,13 +174,9 @@ def replace_contractions(text):
 
 
 # substitute contractions with full words
-print('BEFORE contractions data[abstract]', data['abstract'])
 data['abstract'] = data['abstract'].apply(replace_contractions)
-print('AFTER contractions data[abstract]', data['abstract'])
 
-print('BEFORE contractions data[keyword]', data['keyword'])
 data['keyword'] = data['keyword'].apply(lambda set_of_keyphrases: [replace_contractions(keyphrase) for keyphrase in set_of_keyphrases])
-print('AFTER contractions data[keyword]', data['keyword'])
 
 
 # ======================================================================================================================
@@ -240,7 +214,6 @@ data['abstract'] = data['abstract'].apply(remove_brackets_and_contents)
 # delete newline and tab characters
 newLine_tabs = '\t' + '\n'
 newLine_tabs_table = str.maketrans(newLine_tabs, ' ' * len(newLine_tabs))
-print(newLine_tabs, 'newLine_tabs LEN:', len(newLine_tabs))
 
 
 # remove references of publications (in document text)
@@ -271,11 +244,8 @@ data['abstract'] = data['abstract'].apply(remove_references)
 
 # keep punctuation that might be useful                     -  !"#$%&'()*+,./:;<=>?@[\]^_`{|}~
 #keep_punctuation = ['<', '=', '>', '^', '{', '|', '}', '/', '%', '$', '*', '&']
-#punctuation = [punct for punct in string.punctuation if punct not in keep_punctuation]
 punctuation = string.punctuation  # + '\t' + '\n'
-#punctuation = punctuation.replace("'", '')  # do not delete '
 table = str.maketrans(punctuation, ' '*len(punctuation))  # OR {key: None for key in string.punctuation}
-print(punctuation, 'LEN:', len(punctuation))
 
 
 # remove special characters, non-ascii characters, all single letter except from 'a' and 'A', and, punctuations with whitespace
@@ -340,10 +310,8 @@ with open('data\\train_tokenizer.pickle', 'rb') as handle:
     tokenizer = pickle.load(handle)
 
 X = tokenizer.texts_to_sequences(data['abstract'])
-# print('sequences',X)
 
 word_index = tokenizer.word_index
-# print('word_index', word_index)
 
 
 # ======================================================================================================================
@@ -383,7 +351,6 @@ for index, list_of_keyphrases in enumerate(data['keyword']):
             #tokens = [tok if not re.match('.*\d+', tok) else 'WORD_DIGIT_REPL' for tok in tokens]
             keyphrases_list.append([Stemmer('porter').stem(keyword.lower()) for keyword in tokens])  # stem + lower case
     data['keyword'].iat[index] = keyphrases_list
-#    print('THESE ARE THE KEYPHRASE LIST', len(keyphrases_list), keyphrases_list)
 
 
 # ======================================================================================================================
@@ -439,37 +406,12 @@ for index, abstract in enumerate(tqdm(data['abstract'])):
     y.append(abstract_word_labels)
 
 print('KP count: ', count_KP, '\nKP WORDS count: ', count_KP_words, '\nNON-KP count: ', count_NON_KP)
-'''
-KP count:  3873971 
-NON-KP count:  79557044
-X SHAPE (4147964, 348)
-
-KP count:  3872302 
-NON-KP count:  79597395
-X SHAPE (4147965, 349)
-
-KP count:  3798173 
-NON-KP count:  77013753
-X SHAPE (4136100, 345)
-
-
-KP count:  3887473 
-NON-KP count:  78506536
-X SHAPE (4139868, 347)
-
-
-TRY TO MINIMIZE WORDS
-KP count:  3863958 
-KP WORDS count:  6534606 
-NON-KP TEST count:  77728129
-X SHAPE (4129420, 345)
-'''
 
 
 # ======================================================================================================================
 # Save pre-processed X and y values in file in order to change the batch size efficiently
 # ======================================================================================================================
-import json
+
 # save data
 with open(x_filename+".txt", "w") as fp_x:
     json.dump(X, fp_x)
@@ -484,7 +426,6 @@ with open(y_filename+".txt", "w") as fp_y:
 # Find the maximum length of abstract in the whole dataset
 # Max length of sentence in title and abstract (348)
 # max_len = max(data['abstract'].apply(len))  # Max length of abstract
-print('X SHAPE', pd.DataFrame(X).shape)  # Max length of title and abstract
 
 # Set Abstract + Title max word size (text longer than the number will be trancated)
 # max_len = 348  # Maximum length of abstract in the TRAIN data
@@ -511,9 +452,6 @@ for i in tqdm(range(0, len(X), batch_size)):
         # value: padding value is set to 0, because the padding value CANNOT be a keyphrase
         y_batch = pad_sequences(sequences=y[i:i + batch_size], padding="post", maxlen=max_len, value=0)
 
-        #print('X SHAPE AFTER', np.array(X_batch, dtype=object).shape)
-        #print('y SHAPE AFTER', np.array(y_batch, dtype=object).shape)
-
 
 # ======================================================================================================================
 # Convert y values to CATEGORICAL
@@ -521,12 +459,6 @@ for i in tqdm(range(0, len(X), batch_size)):
 
         # REQUIRED - transform y to categorical (each column is a value of y - like in one-hot-encoding, columns are the vocabulary)
         y_batch = [to_categorical(i, num_classes=2, dtype='int8') for i in y_batch]
-
-        #print(y)
-
-        #print('After processing, sample:', X[0])
-    #    print('After processing, labels:', y_batch[0])
-        #print('y SHAPE AFTER', np.array(y_batch, dtype=object).shape)
 
 
 # ======================================================================================================================
@@ -540,7 +472,6 @@ for i in tqdm(range(0, len(X), batch_size)):
     f = tables.open_file(x_filename+'.hdf', 'a')
     ds = f.create_carray('/', 'x_data'+str(i), obj=X_batch, filters=filters,)
     ds[:] = X_batch
-    #print(ds)
     f.close()
 
     if not x_filename == 'data\\preprocessed_data\\x_TEST_SENTENC_data_preprocessed':  # do NOT write for TEST DATA
@@ -578,26 +509,3 @@ if not x_filename == 'data\\preprocessed_data\\x_TEST_SENTENC_data_preprocessed'
         y = h5f.get_node('/y_data'+str(1024)).read()  # get a specific chunk of data
         print(y)
         print('y SHAPE AFTER', np.array(y, dtype=object).shape)
-
-
-'''
-TRAIN
-KP count:  3882608 
-KP WORDS count:  6584284 
-NON-KP count:  78437854
-X SHAPE (4136306, 347)
-
-
-VALIDATION
-KP count:  146072 
-KP WORDS count:  248422 
-NON-KP count:  2956693
-X SHAPE (156519, 213)
-
-
-TEST
-KP count:  146470 
-KP WORDS count:  248367 
-NON-KP count:  2960068
-X SHAPE (155801, 241)
-'''
