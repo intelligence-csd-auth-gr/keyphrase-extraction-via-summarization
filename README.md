@@ -49,7 +49,7 @@ Place the NUS, ACM and SemEval 2010 datasets under the folder:
 \data\benchmark_data\
 ```
 
-Download "glove.6B.100d.txt" [GloVe](https://nlp.stanford.edu/projects/glove/) embeddings and place them in the project folder under the path:
+Download "glove.6B\glove.6B.100d.txt" [GloVe](https://nlp.stanford.edu/projects/glove/) embeddings and place them in the project folder under the path:
 
 ```bash
 \GloVe\glove.6B\
