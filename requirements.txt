@@ -1,5 +1,4 @@
 keras==2.6.0
-keras_tuner==1.0.3
 matplotlib==3.4.3
 nltk==3.4.5
 numpy==1.18.5
