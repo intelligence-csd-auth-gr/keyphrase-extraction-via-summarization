@@ -11,18 +11,21 @@ Automatically extracting keyphrases from scholarly documents leads to a valuable
 
 
 
+
+
+
 ## Libraries Installation
 
 Clone the project
 
 ```bash
-  git clone https://link-to-project
+  git clone https://github.com/intelligence-csd-auth-gr/keyphrase-extraction-via-summarization.git
 ```
 
-Go to the project directory
+Install libraries
 
 ```bash
-  cd my-project
+  pip install -r requirements.txt
 ```
 
 
@@ -34,13 +37,13 @@ Go to the project directory
 - [ACM](https://github.com/boudinfl/ake-datasets/tree/master/datasets/ACM)
 - [SemEval 2010](https://github.com/snkim/AutomaticKeyphraseExtraction)
 
-Place KP20K datasets under the folder:
+Place the KP20K datasets under the folder:
 
 ```bash
 \data\
 ```
 
-Place NUS, ACM and SemEval 2010 datasets under the folder:
+Place the NUS, ACM and SemEval 2010 datasets under the folder:
 
 ```bash
 \data\benchmark_data\
@@ -56,7 +59,7 @@ Download "glove.6B.100d.txt" GloVe embeddings and place them in the project fold
 
 | Folder | Description     |
 | :-------- | :------- |
-| **data**      | contains all the datasets and also the necessary scripts to generate the test datasets (folder are split by the experiment) |
+| **data**      | contains all the datasets and also the necessary scripts to generate the test datasets (folders are split by experiment) |
 | **data_statistics**      | run any script in this folder to get statistics from each dataset |
 | **unsupervised_models**      | contains code for MultipartiteRank and TF-IDF models |
 
@@ -65,7 +68,11 @@ Download "glove.6B.100d.txt" GloVe embeddings and place them in the project fold
 
 
 
+
+
+
 ## Run Locally - Execute the following files in the order presented
+
 
 
 
@@ -85,6 +92,7 @@ data/benchmark_data/acm_parser.py
 
 
 
+
 ### Generate summarizations
 
 **Generate summarizations** for ACM, NUS and SemEval datasets
@@ -92,6 +100,7 @@ data/benchmark_data/acm_parser.py
 ```bash
 acm_nus_semeval_summarization.py
 ```
+
 
 
 
@@ -123,7 +132,7 @@ load_preprocessed_data.py
 
 
 
-### Data pre-processing for test datsets - Run all scripts in the folders (ACM, NUS, SemEval 2010)
+### Data pre-processing for test datsets - Run all scripts in the folders (ACM, NUS, SemEval)
 
 Prepare the test datasets for the **first three paragraphs of the full-text** experiments
 
@@ -163,6 +172,7 @@ data/benchmark_data/summarization_experiment/
 
 
 
+
 ### Train the model
 
 
@@ -171,6 +181,7 @@ data/benchmark_data/summarization_experiment/
 ```bash
 bi_lstm_crf.py
 ```
+
 
 
 
