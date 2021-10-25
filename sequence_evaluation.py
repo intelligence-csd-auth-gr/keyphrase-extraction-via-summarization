@@ -27,7 +27,6 @@ def evaluation(y_pred, pad_length, y_test_filename='data\\preprocessed_data\\y_T
     y_test = pd.read_csv(y_test_filename, encoding="utf8")
     # translate string back to list of lists (when reading dataframe, lists of lists are read as strings)
     y_test['y_test_keyword'] = y_test['y_test_keyword'].map(ast.literal_eval)
-    #print(y_test)
 
 
     # ======================================================================================================================
@@ -48,9 +47,7 @@ def evaluation(y_pred, pad_length, y_test_filename='data\\preprocessed_data\\y_T
             preds.append([np.argmax(word_pred) for word_pred in abstract_preds])
         return preds
 
-    # print('BEFORE y_pred', y_pred)
     y_pred = pred2label(y_pred)  # convert y_test from categorical (two columns, 1 for each label) to a single value label
-    #print('AFTER y_pred', y_pred)
 
 
     # ======================================================================================================================
@@ -72,30 +69,10 @@ def evaluation(y_pred, pad_length, y_test_filename='data\\preprocessed_data\\y_T
         test.extend(y_test_doc[:length])   # truncate to 500 or 70 if document exceeds that number of words
         pred.extend(y_pred[doc_index][:length])  # OR y_pred[doc_index, :length]  # remove the padding values
 
-    '''
-        gold = y_test_doc[:length]  # truncate to 500 or 70 if document exceeds that number of words
-        best_path = y_pred[doc_index][:length]  # OR y_pred[doc_index, :length]  # remove the padding values
-    
-        total_labels += length
-        correct_labels += np.sum(np.equal(best_path, gold))
-
-    precision = overlap_count / float(guess_count)
-    recall = overlap_count / float(gold_count)
-
-    if precision == 0.0 or recall == 0.0:
-        print('total', 0.0, 0.0, 0.0)
-    else:
-        f = 2 * (precision * recall) / (precision + recall)
-        print('precision', precision)
-        print('recall', recall)
-        print('f1-score', f)
-    '''
     # CALCULATE FOR EACH LABEL THE EVALUATION SCORES?
 
     y_test = test
     y_pred = pred
-    #print(y_test)
-    #print(y_pred)
 
 
     # ======================================================================================================================
@@ -111,10 +88,3 @@ def evaluation(y_pred, pad_length, y_test_filename='data\\preprocessed_data\\y_T
     print("\nAvg Precision for both labels: {:.2%}".format(precision_score(y_test, y_pred, average='macro')))
     print("Avg Recall for both labels: {:.2%}".format(recall_score(y_test, y_pred, average='macro')))
     print("Avg F1-score for both labels: {:.2%}".format(f1_score(y_test, y_pred, average='macro')))
-    '''
-    with open("pretrained_models\\Results.txt", "a") as myfile:  # Write above print into output file
-        myfile.write("\nSequence evaluation\n")
-        myfile.write("Precision for label KP: {:.2%}".format(precision_score(y_test, y_pred, pos_label=1)) + '\n')
-        myfile.write("Recall for label KP: {:.2%}".format(recall_score(y_test, y_pred, pos_label=1)) + '\n')
-        myfile.write("F1-score for label KP: {:.2%}".format(f1_score(y_test, y_pred, pos_label=1)) + '\n')
-    '''
