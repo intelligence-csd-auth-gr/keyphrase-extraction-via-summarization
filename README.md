@@ -132,7 +132,7 @@ load_preprocessed_data.py
 
 
 
-### Data pre-processing for test datsets - Run all scripts in the folders (ACM, NUS, SemEval)
+### Data pre-processing for test datsets (ACM, NUS, SemEval) - Run all scripts in the folders
 
 Prepare the test datasets for the **first three paragraphs of the full-text** experiments
 
