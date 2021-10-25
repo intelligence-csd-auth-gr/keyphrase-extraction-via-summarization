@@ -22,7 +22,7 @@ Clone the project
   git clone https://github.com/intelligence-csd-auth-gr/keyphrase-extraction-via-summarization.git
 ```
 
-Install libraries
+Install libraries (Python 3.7)
 
 ```bash
   pip install -r requirements.txt
