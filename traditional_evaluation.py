@@ -39,7 +39,6 @@ def evaluation(y_pred=None, y_test=None, x_test=None, x_filename=None, y_filenam
             assembl_docs = y_test['assemble_documents_index']
         y_test = y_test['keyword'].map(ast.literal_eval)
 
-        # print(x_test)
         print(y_test)
 
 
@@ -62,9 +61,7 @@ def evaluation(y_pred=None, y_test=None, x_test=None, x_filename=None, y_filenam
                 preds.append(doc_preds)
             return preds
 
-        # print('BEFORE y_pred', y_pred)
         y_pred = pred2label(y_pred)  # convert y_pred from categorical (two columns, 1 for each label) to a single value label
-        # print('AFTER y_pred', y_pred)
 
 
         # ======================================================================================================================
@@ -81,8 +78,6 @@ def evaluation(y_pred=None, y_test=None, x_test=None, x_filename=None, y_filenam
                 if word_index:  # check if this is the FIRST WORD in the abstract [to avoid negative index value]
                     if doc_prediction[word_index - 1]:  # check if the previous word is a keyword
                         if word_prediction:  # check if the current word is a keyword
-                            #                        print(x_test['abstract'][doc_index])
-                            #                        print(x_test['abstract'][doc_index][word_index])
                             consecutive_keywords.append(x_test['abstract'][doc_index][word_index])
                     else:
                         if len(consecutive_keywords):  # save keyword list if exists (not empty list)
@@ -92,8 +87,6 @@ def evaluation(y_pred=None, y_test=None, x_test=None, x_filename=None, y_filenam
                             consecutive_keywords.append(x_test['abstract'][doc_index][word_index])
                 else:  # save the FIRST WORD of the abstract if it is a keyword
                     if word_prediction:  # check if the current word is a keyword
-                        #               print('HEREEEE', doc_index, word_index)
-                        #               print(x_test['abstract'][doc_index])
                         consecutive_keywords.append(x_test['abstract'][doc_index][word_index])
 
             if len(consecutive_keywords):  # save the keywords that occur in the END of the abstract, if they exist (not empty list)
@@ -110,17 +103,6 @@ def evaluation(y_pred=None, y_test=None, x_test=None, x_filename=None, y_filenam
         # define y_test if full-text in paragraphs/stentences
         if 'SENTENC' in x_filename or 'SENTEC' in x_filename or 'PARAGRAPH' in x_filename:
             assembl_docs = paragraph_assemble_docs
-
-   # print(pred_keyphrase_list)
-    #print(y_test)
-
-    # FIND IF ANY KEYPHRASES EXIST ON THE PREDICTION SET
-    here = [1 if any(doc) else 0 for doc in y_pred]
-    print('\ny_pred', np.array(y_pred, dtype=object).shape)
-    if any(here):
-        print('THERE ARE KEYPHRASES')
-    else:
-        print('THERE ARE NOOOOOOT KEYPHRASES')
 
 
     # ======================================================================================================================
@@ -191,8 +173,6 @@ def evaluation(y_pred=None, y_test=None, x_test=None, x_filename=None, y_filenam
                 # find if the gold keyphrases exist in the predicted set, and if so mark which gold and predicted keyphrases have a match
                 for gold_kp_index, gold_keyphr in enumerate(y_test_set[index_pred]):
                     gold_keyphrase_tokens = gold_keyphr.split()
-          #          print('gold: ', gold_keyphrase_tokens)
-         #           print('pred: ', doc_pred)
                     avg_coverage_ratio_list = []
                     gold_coverage_ratio_list=[]
                     for pred_kp in doc_pred:
@@ -211,7 +191,7 @@ def evaluation(y_pred=None, y_test=None, x_test=None, x_filename=None, y_filenam
                             gold_coverage_ratio = 0
                         avg_coverage_ratio_list.append((gold_coverage_ratio + pred_coverage_ratio) / 2)  # save the average of the keyphrase coverage and the coverage ratio
                         gold_coverage_ratio_list.append(gold_coverage_ratio)
-         #           print('percent: ', avg_coverage_ratio_list)
+                        
                     # find the max average coverage ratio and its position on the list
                     max_index, max_avg_coverage_ratio_list = max(enumerate(avg_coverage_ratio_list), key=itemgetter(1))
                     if max_avg_coverage_ratio_list > 0.5:
@@ -232,8 +212,6 @@ def evaluation(y_pred=None, y_test=None, x_test=None, x_filename=None, y_filenam
         precision = 0
         recall = 0
         f1_score = 0
-        # print(TP, FN, FP)
-        # print('precision=', TP / (TP + FP), 'recall=', TP / (TP + FN))
         if not (TP == FP == 0):
             precision = TP / (TP + FP)
         if not (TP == FN == 0):
@@ -255,7 +233,6 @@ def evaluation(y_pred=None, y_test=None, x_test=None, x_filename=None, y_filenam
     # assemble the sentences of a document into a whole document again (only for the SENTEC and PARAGRAPH)
     print(x_filename)
     if 'SENTENC' in x_filename or 'SENTEC' in x_filename or 'PARAGRAPH' in x_filename:
-        print('ENTERED SENTENC & PARAGRAPH MODE')
         y_test_set = []  # set of original/all GOLD keyphrases for each document
         y_test_set_extraction = []  # keep only the GOLD keyphrases that exist in their corresponding document
         pred_keyphrase_list_set = []  # set of PREDICTED keyphrases for each document
@@ -282,7 +259,6 @@ def evaluation(y_pred=None, y_test=None, x_test=None, x_filename=None, y_filenam
                     gold_document_keyphrases_extraction.append(keyphrase.strip())
 
 
-
             for tokenized_keyphrase in pred_keyphrase_list[doc_index]:
                 keyphrase = ''
                 for word in tokenized_keyphrase:
@@ -290,20 +266,16 @@ def evaluation(y_pred=None, y_test=None, x_test=None, x_filename=None, y_filenam
                 pred_document_keyphrases.append(keyphrase.strip())
 
 
-
             # check if the previous sentence is in the same document (has the same document id) as the current
             if doc_index == 0:
-                # print('we are in the 1st document')
                 gold_same_document_keyphrases.extend(gold_document_keyphrases)
                 gold_extraction_same_document_keyphrases.extend(gold_document_keyphrases_extraction)
                 pred_same_document_keyphrases.extend(pred_document_keyphrases)
             elif assembl_docs[doc_index] == assembl_docs[doc_index - 1]:
-                # print('we are in the same document', y_test['assemble_documents_index'][doc_index], '==', y_test['assemble_documents_index'][doc_index - 1])
                 gold_same_document_keyphrases.extend(gold_document_keyphrases)
                 gold_extraction_same_document_keyphrases.extend(gold_document_keyphrases_extraction)
                 pred_same_document_keyphrases.extend(pred_document_keyphrases)
             else:  # different documents
-                # print('CHANGED document', y_test['assemble_documents_index'][doc_index], '==', y_test['assemble_documents_index'][doc_index - 1])
                 # save keyphrases for the previous document
                 y_test_set.append(set(gold_same_document_keyphrases))  # get each keyphrase just once
                 y_test_set_extraction.append(set(gold_extraction_same_document_keyphrases))
@@ -347,7 +319,7 @@ def evaluation(y_pred=None, y_test=None, x_test=None, x_filename=None, y_filenam
 
                 if keyphrase.strip() in abstract_as_string:  # keep only keyphrases that exist in the text - keyphrase EXTRACTION
                     extraction_document_keyphrases.append(keyphrase.strip())
-                #            print(document_keyphrases)
+                    
             y_test_set.append(set(document_keyphrases))  # get each keyphrase just once
             y_test_set_extraction.append(set(extraction_document_keyphrases))  # get each keyphrase just once
 
@@ -371,16 +343,6 @@ def evaluation(y_pred=None, y_test=None, x_test=None, x_filename=None, y_filenam
                     keyphrase += Stemmer('porter').stem(word) + ' '  # apply STEMMING
                 document_keyphrases.append(keyphrase.strip())
             pred_keyphrase_list_set.append(set(document_keyphrases))  # get each keyphrase just once
-
-
-
-    # print y_test and y_pred
-
-    #for i in range(len(pred_keyphrase_list_set)):
-    for i in range(10):
-        print('pred', pred_keyphrase_list_set[i])
-        print('test', y_test_set[i])
-        print('extraction test', y_test_set_extraction[i])
 
 
     # ======================================================================================================================
