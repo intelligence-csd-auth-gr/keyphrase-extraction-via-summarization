@@ -12,10 +12,12 @@ from datetime import timedelta
 import matplotlib.pyplot as plt
 from tensorflow import constant  # used to convert array/list to a Keras Tensor
 from keras.optimizers import SGD
+from keras.regularizers import l1
 from keras.utils import plot_model
 from sklearn.metrics import f1_score
 from keras.optimizers import RMSprop
 from keras.models import Model, Input
+from keras.constraints import max_norm
 from keras.callbacks import TensorBoard
 from data_generator import DataGenerator
 from keras.callbacks import LearningRateScheduler
@@ -290,12 +292,7 @@ test_steps = np.ceil(test_data_size/batch_size)  # number of validation and test
 print('steps_per_epoch', steps_per_epoch)
 print('validation_steps', validation_steps)
 print('test_steps', test_steps)
-'''
-# (number of batches) -1, because batches start from 0
-training_batch_generator = batch_generator(x_train_filename, y_train_filename, batch_size, steps_per_epoch - 1)  # training batch generator
-validation_batch_generator = batch_generator(x_validate_filename, y_validate_filename, batch_size, validation_steps - 1)  # validation batch generator
-test_batch_generator = batch_generator(x_test_filename, '', batch_size, test_steps - 1)  # testing batch generator
-'''
+
 # Generators
 training_generator = DataGenerator(x_train_filename, y_train_filename, steps_per_epoch, batch_size=batch_size, shuffle=False)
 validation_generator = DataGenerator(x_validate_filename, y_validate_filename, validation_steps, batch_size=batch_size, shuffle=False)
@@ -375,26 +372,18 @@ print(embedding_matrix)
 # ======================================================================================================================
 # Bi-LSTM-CRF
 # ======================================================================================================================
-from keras.regularizers import l1
-from keras.constraints import max_norm
+
 # Model definition
-inpt = Input(shape=(MAX_LEN,))  # MAX_LEN, VECT_SIZE
-# input_dim: Size of the vocabulary, i.e. maximum integer index + 1
-# output_dim: Dimension of the dense embedding
-# input_shape: 2D tensor with shape (batch_size, input_length)
+inpt = Input(shape=(MAX_LEN,))
 
 # doc_vocab: vocabulary - number of words - of the train dataset
 model = Embedding(doc_vocab, output_dim=100, input_length=MAX_LEN,  # n_words + 2 (PAD & UNK)
                   weights=[embedding_matrix],  # use GloVe vectors as initial weights
-                  mask_zero=True, trainable=True, activity_regularizer=l1(0.00000001))(inpt)  # name='word_embedding'
+                  mask_zero=True, trainable=True, activity_regularizer=l1(0.00000001))(inpt)
 
-# recurrent_dropout=0.1 (recurrent_dropout: 10% possibility to drop of the connections that simulate LSTM memory cells)
-# units = 100 / 0.55 = 182 neurons (to account for 0.55 dropout)
 model = Bidirectional(LSTM(units=100, return_sequences=True, activity_regularizer=l1(0.0000000001), recurrent_constraint=max_norm(2)))(model)  # input_shape=(1, MAX_LEN, VECT_SIZE)
-# model = Dropout(0.3)(model)  # 0.5
-# model = TimeDistributed(Dense(number_labels, activation="relu"))(model)  # a dense layer as suggested by neuralNer
-model = Dense(number_labels, activation=None)(model)  # activation='linear' (they are the same)
-crf = CRF()  # CRF layer { SHOULD I SET -> number_labels+1 (+1 -> PAD) }
+model = Dense(number_labels, activation=None)(model)
+crf = CRF()  # CRF layer
 out = crf(model)  # output
 model = Model(inputs=inpt, outputs=out)
 
@@ -410,7 +399,6 @@ def step_decay(epoch):
     drop = 0.5
     # epochs_drop = 1.0  # how often to change the learning rate
     lrate = initial_lrate / (1 + drop * epoch)
-    # print('epoch:', epoch, 'lrate:', lrate)
     '''
     lrate=[0.01, 0.0075, 0.005, 0.0025, 0.001]
     lrate = lrate[epoch]
@@ -422,13 +410,10 @@ lrate = LearningRateScheduler(step_decay)
 
 # set optimizer
 # decay=learning_rate / epochs
-# CASE 1: decay=0.01
-# CASE 2: decay=0.1/5
-opt = SGD(learning_rate=0.0, momentum=0.9, clipvalue=5.0)  # clipvalue (Gradient Clipping): clip the gradient to [-5 to 5
+opt = SGD(learning_rate=0.0, momentum=0.9, clipvalue=5.0)  # clipvalue (Gradient Clipping): clip the gradient to [-5 to 5]
 
 # compile Bi-LSTM-CRF
-model.compile(optimizer=opt, loss=crf.loss, metrics=[crf.accuracy])  # , f1score()
-# model.compile(optimizer=opt, loss=crf.loss, metrics=[crf.viterbi_accuracy])
+model.compile(optimizer=opt, loss=crf.loss, metrics=[crf.accuracy])
 
 print('BEFORE TRAINING', model.get_weights())
 
@@ -462,28 +447,15 @@ my_callbacks = [
     PredictionCallback()
 ]
 
-# tf.keras.callbacks.TensorBoard(log_dir='./logs')
-# tensorboard --logdir logs/validation         [ USE ON TERMINAL ]
-
 
 # Train model
-'''
-history = model.fit(x=training_batch_generator, steps_per_epoch=steps_per_epoch,
-                    validation_data=validation_batch_generator, validation_steps=validation_steps - 1,  # -1, because it reads more times than actual needed
-                    epochs=1, callbacks=my_callbacks, verbose=2)
-'''
 history = model.fit(x=training_generator,
                     validation_data=validation_generator,
                     epochs=5, callbacks=my_callbacks, verbose=2)
 
-
-# [MANDATORY] Convert data to either a Tensorflow tensor (for CRF layer) or a numpy array
-# y_train = constant(y_train)  # convert array/list to a Keras Tensor
-# y_train = np.array(y_train)  # convert array/list to a numpy array
-
 model.summary()
 
-print('AFTER TRAINING', model.get_weights())
+# print('AFTER TRAINING', model.get_weights())
 
 
 # ======================================================================================================================
@@ -493,8 +465,6 @@ print('AFTER TRAINING', model.get_weights())
 print('\nPredicting...')
 # y_pred = model.predict(x=test_batch_generator, steps=test_steps)  # steps=validation_steps, because it does not read the last batch
 y_pred = model.predict(x=test_generator)
-print(y_pred)
-print('\nY_PRED SHAPE', np.array(y_pred, dtype=object).shape)
 
 
 # ======================================================================================================================
@@ -515,17 +485,6 @@ sequence_evaluation.evaluation(y_pred, MAX_LEN, y_test_filename)
 # Save the model (weights)
 # save_all_weights | load_all_weights: saves model and optimizer weights (save_weights and save)
 model.save_weights("pretrained_models\\fulltext_model_weights.h5")  # sentences_model_weights.h5
-
-'''
-# `assert_consumed` can be used as validation that all variable values have been restored from the checkpoint. 
-# See `tf.train.Checkpoint.restore` for other methods in the Status object.
-print(load_status.assert_consumed())
-
-# Check that all of the pretrained weights have been loaded.
-for a, b in zip(pretrained.weights, model.weights):
-    np.testing.assert_allclose(a.numpy(), b.numpy())
-'''
-
 
 # Save the model (architecture, loss, metrics, optimizer state, weights)
 model.save('pretrained_models\\fulltext_bi_lstm_crf_dense_linear.h5')  # sentences_bi_lstm_crf_dense_linear.h5
