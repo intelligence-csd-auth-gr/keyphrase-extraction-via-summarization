@@ -2,9 +2,7 @@ import time
 import tables  # load compressed data files
 import numpy as np
 import pandas as pd
-# from crf import CRF
 from tf2crf import CRF
-#from crf_nlp_architect import CRF   ?????
 from numpy import load
 import tensorflow as tf
 import keras.backend as K
@@ -251,25 +249,11 @@ def load_data(x_filename, y_filename, batch_number):
     # Read X batches for testing from file (pre-processed)
     with tables.File(x_filename, 'r') as h5f:
         x = h5f.get_node('/x_data' + str(batch_number)).read()  # get a specific chunk of data
-        #print(x)
-#        print('X SHAPE AFTER', np.array(x, dtype=object).shape)
 
     if not y_filename == '':    # for TEST data read only the x values
         # Read y batches for testing from file (pre-processed)
         with tables.File(y_filename, 'r') as h5f:
             y = h5f.get_node('/y_data' + str(batch_number)).read()  # get a specific chunk of data
-            #print(y)
-#            print('y SHAPE AFTER', np.array(y, dtype=object).shape)
-
-    '''
-    print(y)
-    here = [1 if doc[:, 1].any() else 0 for doc in y]
-    print('y SHAPE AFTER', np.array(y, dtype=object).shape)
-    if any(here):
-        print('THERE ARE KEYPHRASES')
-    else:
-        print('THERE ARE NOOOOOOT KEYPHRASES')
-    '''
 
     '''
     if 'TRAIN' in x_filename:  # for training return class weights as well
@@ -293,9 +277,6 @@ def load_data(x_filename, y_filename, batch_number):
         return x
 
     return x, constant(y)
-
-
-# USE weights for all data? (train, validation and test???)
 
 
 # ======================================================================================================================
@@ -323,50 +304,6 @@ test_generator = DataGenerator(x_test_filename, '', test_steps, batch_size=batch
 # ======================================================================================================================
 # Define f1-score to monitor during training and save the best model with Checkpoint
 # ======================================================================================================================
-'''
-def f1score(y_true, y_predicted):  # taken from old keras source code
-    true_positives = K.sum(K.round(K.clip(y_true * y_predicted, 0, 1)))
-    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
-    predicted_positives = K.sum(K.round(K.clip(y_predicted, 0, 1)))
-    precision = true_positives / (predicted_positives + K.epsilon())
-    recall = true_positives / (possible_positives + K.epsilon())
-    f1_val = 2*(precision*recall)/(precision+recall+K.epsilon())
-    return f1_val
-'''
-
-'''
-def create_f1():
-    def f1_function(y_true, y_pred):
-        y_pred_binary = tf.where(y_pred>=0.5, 1., 0.)
-        y_true = tf.cast(y_true, tf.float32)
-        tp = tf.reduce_sum(y_true * y_pred_binary)
-        predicted_positives = tf.reduce_sum(y_pred_binary)
-        possible_positives = tf.reduce_sum(y_true)
-        return tp, predicted_positives, possible_positives
-    return f1_function
-
-
-class f1score(keras.metrics.Metric):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)  # handles base args (e.g., dtype)
-        self.f1_function = create_f1()
-        self.tp_count = self.add_weight("tp_count", initializer="zeros")
-        self.all_predicted_positives = self.add_weight('all_predicted_positives', initializer='zeros')
-        self.all_possible_positives = self.add_weight('all_possible_positives', initializer='zeros')
-
-    def update_state(self, y_true, y_pred, sample_weight=None):
-        tp, predicted_positives, possible_positives = self.f1_function(y_true, y_pred)
-        self.tp_count.assign_add(tp)
-        self.all_predicted_positives.assign_add(predicted_positives)
-        self.all_possible_positives.assign_add(possible_positives)
-
-    def result(self):
-        precision = self.tp_count / self.all_predicted_positives
-        recall = self.tp_count / self.all_possible_positives
-        f1 = 2*(precision*recall)/(precision+recall)
-        return f1
-'''
-
 
 def load_y_val(y_file_name, batch_size, number_of_batches):
     """
@@ -451,18 +388,6 @@ model = Embedding(doc_vocab, output_dim=100, input_length=MAX_LEN,  # n_words + 
                   weights=[embedding_matrix],  # use GloVe vectors as initial weights
                   mask_zero=True, trainable=True, activity_regularizer=l1(0.00000001))(inpt)  # name='word_embedding'
 
-
-# 000001 00000001  [ TRASH - UNSTABLE ]
-# 000001 0000001  [ TRASH - UNSTABLE ]
-# 0000001 000000001  [ TRASH - UNSTABLE ]
-
-# 00000001 0000000001  [BEST 32.32 + 21.58]
-# 00000001 000000001   [MEDIUM 35.54 + 13.77]
-# 0000001 0000000001     [MEDIUM 31.94 + 21.13]
-
-# 000000001 00000000001  [ TRASH ]
-# 000000001 0000000001  [ TRASH ]
-
 # recurrent_dropout=0.1 (recurrent_dropout: 10% possibility to drop of the connections that simulate LSTM memory cells)
 # units = 100 / 0.55 = 182 neurons (to account for 0.55 dropout)
 model = Bidirectional(LSTM(units=100, return_sequences=True, activity_regularizer=l1(0.0000000001), recurrent_constraint=max_norm(2)))(model)  # input_shape=(1, MAX_LEN, VECT_SIZE)
@@ -491,57 +416,15 @@ def step_decay(epoch):
     lrate = lrate[epoch]
     '''
     return lrate
-'''
-Exact Match
-Precision: 0.3457
-Recall: 0.0407
-F1-score: 0.0728
-
-Partial Match
-Precision: 0.5338
-Recall: 0.1009
-F1-score: 0.1698
-
-recall for label KP: 9.54%
-precision for label KP: 52.35%
-F1-score for label KP: 16.14%
-f1-score after each epoch:  [0.049323208412881514, 0.022992335888037316]
-learning rate after each epoch:  [0.1, 0.033333335]
 
 
-
-clipvalue=10.0
-Exact Match
-Precision: 0.2971
-Recall: 0.0218
-F1-score: 0.0406
-
-Partial Match
-Precision: 0.5121
-Recall: 0.0640
-F1-score: 0.1137
-
-recall for label KP: 6.04%
-precision for label KP: 50.25%
-F1-score for label KP: 10.78%
-f1-score after each epoch:  [0.07219984791731207, 0.018671145253423733]
-learning rate after each epoch:  [0.01, 0.006666667]
-'''
-# 16588/16588 - 5128s - loss: 56.9070 - accuracy: 0.8656 - val_loss: 505.4428 - val_accuracy: 0.9229 - lr-SGD: 0.0067
-# 16588/16588 - 6098s - loss: 47.0422 - accuracy: 0.8756 - val_loss: 1403.2142 - val_accuracy: 0.9229 - lr-SGD: 0.0050
-# 16588/16588 - 5615s - loss: 38.4642 - accuracy: 0.8823 - val_loss: 1716.1786 - val_accuracy: 0.9229 - lr-SGD: 0.0040
 lrate = LearningRateScheduler(step_decay)
-
-#2 F1-score: 0.2080 + 30 + 0.22
-#3 F1-score: 0.1821 + 0.16
 
 # set optimizer
 # decay=learning_rate / epochs
 # CASE 1: decay=0.01
 # CASE 2: decay=0.1/5
-opt = SGD(learning_rate=0.0, momentum=0.9, clipvalue=5.0)  # clipvalue (Gradient Clipping): clip the gradient to [-5 to 5]
-#opt = SGD(learning_rate=0.01, decay=0.01/steps_per_epoch, momentum=0.9, clipvalue=10.0)  # clipvalue (Gradient Clipping): clip the gradient to [-5 to 5]
-# opt = SGD(learning_rate=lr_rate, clipvalue=3.0, clipnorm=2.0, momentum=0.9)  # clipvalue (Gradient Clipping): clip the gradient to [-5 to 5]
+opt = SGD(learning_rate=0.0, momentum=0.9, clipvalue=5.0)  # clipvalue (Gradient Clipping): clip the gradient to [-5 to 5
 
 # compile Bi-LSTM-CRF
 model.compile(optimizer=opt, loss=crf.loss, metrics=[crf.accuracy])  # , f1score()
