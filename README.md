@@ -81,13 +81,13 @@ Download "glove.6B\glove.6B.100d.txt" [GloVe](https://nlp.stanford.edu/projects/
 **Prepare the SemEval 2010** dataset
 
 ```bash
-data/benchmark_data/semeval_2010/combine_semeval_dataset.py
+python data/benchmark_data/semeval_2010/combine_semeval_dataset.py
 ```
 
 **Prepare the ACM** dataset
 
 ```bash
-data/benchmark_data/acm_parser.py
+python data/benchmark_data/acm_parser.py
 ```
 
 
@@ -98,7 +98,7 @@ data/benchmark_data/acm_parser.py
 **Generate summarizations** for ACM, NUS and SemEval datasets
 
 ```bash
-acm_nus_semeval_summarization.py
+python acm_nus_semeval_summarization.py
 ```
 
 
@@ -109,25 +109,25 @@ acm_nus_semeval_summarization.py
 **Clean duplicate documents** between the train set and each of the test sets
 
 ```bash
-data/benchmark_data/clean_duplicate_papers.py
+python data/benchmark_data/clean_duplicate_papers.py
 ```
 
 Prepare the **KP20k** datasets (train: kp527k, validation: kp20k-v, test: kp20k)
 
 ```bash
-preprocessing_full.py
+python preprocessing_full.py
 ```
 
 Prepare the **KP20k split into sentences** datasets (train: kp527k, validation: kp20k-v, test: kp20k)
 
 ```bash
-preprocessing_sentences.py
+python preprocessing_sentences.py
 ```
 
 Change sequence size of string data without needing to pre-process data again
 
 ```bash
-load_preprocessed_data.py
+python load_preprocessed_data.py
 ```
 
 
@@ -137,37 +137,37 @@ load_preprocessed_data.py
 Prepare the test datasets for the **first three paragraphs of the full-text** experiments
 
 ```bash
-data/benchmark_data/first_paragraphs_fulltext/
+python data/benchmark_data/first_paragraphs_fulltext/
 ```
 
 Prepare the test datasets for the **complete abstract** experiments
 
 ```bash
-data/benchmark_data/full_abstract/
+python data/benchmark_data/full_abstract/
 ```
 
 Prepare the test datasets for the **full-text split into paragraphs** experiments
 
 ```bash
-data/benchmark_data/paragraph_fulltext/
+python data/benchmark_data/paragraph_fulltext/
 ```
 
 Prepare the test datasets for the **abstract split into sentences** experiments
 
 ```bash
-data/benchmark_data/sentence_abstract/
+python data/benchmark_data/sentence_abstract/
 ```
 
 Prepare the test datasets for the **full-text split into sentences** experiments
 
 ```bash
-data/benchmark_data/sentence_fulltext/
+python data/benchmark_data/sentence_fulltext/
 ```
 
 Prepare the test datasets for the **summarization of the full-text** experiments
 
 ```bash
-data/benchmark_data/summarization_experiment/
+python data/benchmark_data/summarization_experiment/
 ```
 
 
@@ -179,7 +179,7 @@ data/benchmark_data/summarization_experiment/
 **Train Bi-LSTM-CRF** model (uncomment the proper dataset file paths to select the desired test sets)
 
 ```bash
-bi_lstm_crf.py
+python bi_lstm_crf.py
 ```
 
 
@@ -190,11 +190,27 @@ bi_lstm_crf.py
 Load a **trained model**
 
 ```bash
-load_pretrained_model.py
+python load_pretrained_model.py
 ```
 
 Load **trained models** for the experiments of the **combined predictions of Abstract & Summaries**
 
 ```bash
-combined_summary_abstract_load_pretrained_model.py
+python combined_summary_abstract_load_pretrained_model.py
+```
+
+
+
+### Citation
+
+Please cite the following paper if you are interested in using our code.
+
+```bash
+@inproceedings{kontoulis2021keyphrase,
+  title={Keyphrase Extraction from Scientific Articles via Extractive Summarization},
+  author={Kontoulis, Chrysovalantis Giorgos and Papagiannopoulou, Eirini and Tsoumakas, Grigorios},
+  booktitle={Proceedings of the Second Workshop on Scholarly Document Processing},
+  pages={49--55},
+  year={2021}
+}
 ```
