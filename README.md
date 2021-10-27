@@ -80,7 +80,7 @@ Download "glove.6B/glove.6B.100d.txt" [GloVe](https://nlp.stanford.edu/projects/
 | **unsupervised_models**      | contains code for MultipartiteRank and TF-IDF models |
 
 
-**Create the following folders under the folder ``/data/preprocessed_data/`` to store the processed data for all experiments:** (Skip if data were downloaded with the "Automated Data Set-up")
+**Create the following folders under the folder ``/data/preprocessed_data/`` to store the processed data for all experiments:** (Skip if data were downloaded with the "Automated Data Set-up" method)
 
 ```bash
 /data/preprocessed_data/first_paragraphs_fulltext/
