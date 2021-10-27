@@ -33,7 +33,7 @@ Install libraries (Python 3.7)
 
 ### Automated Data Set-up
 
-**Download all datasets (KP20K, NUS, ACM & SemEval) used in the experiments [here](https://drive.google.com/file/d/19v_gSkI0Qo_BXyNFS9VOc3-0GuELf_Fl/view?usp=sharing) OR follow the instructions below to set them up manually.** To place the data in the working project folder, paste the downloaded ``data/`` folder into the root folder of the project.
+**Download all datasets (KP20K, NUS, ACM & SemEval) used in the experiments [here](https://drive.google.com/file/d/19v_gSkI0Qo_BXyNFS9VOc3-0GuELf_Fl/view?usp=sharing) OR follow the instructions below to set them up manually.** To place the data in the working project folder, paste the downloaded ``data/`` folder into the root folder of the project. The downloaded folder cointains all necessary folder under the ``/data/preprocessed_data/`` folder, so skip the folder creation step (see section "Folders" below).
 
 ### Manual Data Set-up
 
@@ -80,7 +80,7 @@ Download "glove.6B/glove.6B.100d.txt" [GloVe](https://nlp.stanford.edu/projects/
 | **unsupervised_models**      | contains code for MultipartiteRank and TF-IDF models |
 
 
-**Create the following folders under the folder ``/data/preprocessed_data/`` to store the processed data for all experiments:**
+**Create the following folders under the folder ``/data/preprocessed_data/`` to store the processed data for all experiments:** (Skip if data were downloaded with the "Automated Data Set-up")
 
 ```bash
 /data/preprocessed_data/first_paragraphs_fulltext/
