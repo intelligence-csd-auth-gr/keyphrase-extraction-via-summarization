@@ -131,7 +131,7 @@ python data/benchmark_data/test_dataset_processing/acm_parser.py
 python acm_nus_semeval_summarization.py
 ```
 
-Move the generated files (``ACM_summarized.csv``,  ``NUS_summarized.csv`` and  ``SemEval-2010_summarized.csv``) that contain the summarizations into the folder  ``data\benchmark_data\summarization_experiment``
+Move the generated files (``ACM_summarized.csv``,  ``NUS_summarized.csv`` and  ``SemEval-2010_summarized.csv``) that contain the summarizations into the folder  ``data/benchmark_data/summarization_experiment/``
 
 
 
