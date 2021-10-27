@@ -31,6 +31,11 @@ Install libraries (Python 3.7)
 
 ## Data Download
 
+### Automated Data Set-up
+
+**Download all datasets (KP20K, NUS, ACM & SemEval) used in the experiments [here](https://drive.google.com/file/d/19v_gSkI0Qo_BXyNFS9VOc3-0GuELf_Fl/view?usp=sharing) OR follow the instructions below to set them up manually.** To place the data in the working project folder, paste the downloaded ``data/`` folder into the root folder of the project.
+
+### Manual Data Set-up
 
 - [KP20K](https://drive.google.com/file/d/1ZTQEGZSq06kzlPlOv4yGjbUpoDrNxebR/view) (source: [initial repository](https://github.com/memray/seq2seq-keyphrase) of paper [Deep Keyphrase Generation](http://memray.me/uploads/acl17-keyphrase-generation.pdf))
 - [NUS](https://drive.google.com/file/d/1z1JGWMnQkkWw_4tjptgO-dxXD0OeTfuP/view) (source: [updated repository](https://github.com/memray/seq2seq-keyphrase) of paper [Deep Keyphrase Generation](https://github.com/memray/OpenNMT-kpg-release))
@@ -40,7 +45,7 @@ Install libraries (Python 3.7)
 Place the ``KP20K`` datasets (``kp20k_training.json``, ``kp20k_validation.json``, ``kp20k_testing.json``) under the folder:
 
 ```bash
-\data\
+/data/
 ```
 
 For the ``NUS`` dataset:
@@ -56,11 +61,15 @@ For the ``SemEval 2010`` dataset (create folders if not existing):
 - manually merge the files ``references/train.combined.stem.json`` and ``references/test.combined.stem.json`` into a file named ``train_test.combined.stem.json``, and, place it in ``data/benchmark_data/test_dataset_processing/semeval_2010/``
 
 
+### Download Pre-trained Word Embeddings
+
 Download "glove.6B/glove.6B.100d.txt" [GloVe](https://nlp.stanford.edu/projects/glove/) embeddings and place them in the project folder under the path:
 
 ```bash
 /GloVe/glove.6B/
 ```
+
+
 
 ## Folders
 
