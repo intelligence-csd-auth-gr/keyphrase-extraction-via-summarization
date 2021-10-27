@@ -32,27 +32,34 @@ Install libraries (Python 3.7)
 ## Data Download
 
 
-- [KP20K](https://drive.google.com/file/d/1z1JGWMnQkkWw_4tjptgO-dxXD0OeTfuP/view) - provided by [Deep Keyphrase Generation](https://github.com/memray/OpenNMT-kpg-release)
-- [NUS](https://github.com/boudinfl/ake-datasets/tree/master/datasets/NUS)
+- [KP20K](https://drive.google.com/file/d/1ZTQEGZSq06kzlPlOv4yGjbUpoDrNxebR/view) (source: [initial repository](https://github.com/memray/seq2seq-keyphrase) of paper [Deep Keyphrase Generation](http://memray.me/uploads/acl17-keyphrase-generation.pdf))
+- [NUS](https://drive.google.com/file/d/1z1JGWMnQkkWw_4tjptgO-dxXD0OeTfuP/view) (source: [updated repository](https://github.com/memray/seq2seq-keyphrase) of paper [Deep Keyphrase Generation](https://github.com/memray/OpenNMT-kpg-release))
 - [ACM](https://github.com/boudinfl/ake-datasets/tree/master/datasets/ACM)
-- [SemEval 2010](https://github.com/snkim/AutomaticKeyphraseExtraction)
+- [SemEval 2010](https://github.com/boudinfl/ake-datasets/tree/master/datasets/SemEval-2010)
 
-Place the KP20K datasets under the folder:
+Place the ``KP20K`` datasets (``kp20k_training.json``, ``kp20k_validation.json``, ``kp20k_testing.json``) under the folder:
 
 ```bash
 \data\
 ```
 
-Place the NUS, ACM and SemEval 2010 datasets under the folder:
+For the NUS dataset:
+- move the file ``data/json/nus/nus_test.json`` to ``data/benchmark_data/`` and rename it to ``NUS.json``
+
+
+For the ``ACM`` dataset (create folders if not existing):
+- place the contents of ``src/all_docs_abstacts_refined.zip`` inside the folder ``data/benchmark_data/test_dataset_processing/ACM/``,
+- place the contents of ``references/test.author.stem.json`` in ``data/benchmark_data/test_dataset_processing/ACM/all_keys_in_json/``
+
+For the SemEval 2010 dataset (create folders if not existing):
+- place the contents of both the``train/`` and ``test/`` folders into the project folder ``data/benchmark_data/test_dataset_processing/semeval_2010/train_test_combined/``,
+- manually merge the files ``references/train.combined.stem.json`` and ``references/test.combined.stem.json`` into a file named ``train_test.combined.stem.json``, and, place it in ``data/benchmark_data/test_dataset_processing/semeval_2010/``
+
+
+Download "glove.6B/glove.6B.100d.txt" [GloVe](https://nlp.stanford.edu/projects/glove/) embeddings and place them in the project folder under the path:
 
 ```bash
-\data\benchmark_data\
-```
-
-Download "glove.6B\glove.6B.100d.txt" [GloVe](https://nlp.stanford.edu/projects/glove/) embeddings and place them in the project folder under the path:
-
-```bash
-\GloVe\glove.6B\
+/GloVe/glove.6B/
 ```
 
 ## Folders
@@ -64,8 +71,31 @@ Download "glove.6B\glove.6B.100d.txt" [GloVe](https://nlp.stanford.edu/projects/
 | **unsupervised_models**      | contains code for MultipartiteRank and TF-IDF models |
 
 
+**Create the following folders under the folder ``/data/preprocessed_data/`` to store the processed data for all experiments:**
 
+```bash
+/data/preprocessed_data/first_paragraphs_fulltext/
+```
 
+```bash
+/data/preprocessed_data/full_abstract/
+```
+
+```bash
+/data/preprocessed_data/paragraph_fulltext/
+```
+
+```bash
+/data/preprocessed_data/sentence_abstract/
+```
+
+```bash
+/data/preprocessed_data/sentence_fulltext/
+```
+
+```bash
+/data/preprocessed_data/summarization_experiment/
+```
 
 
 
@@ -81,13 +111,13 @@ Download "glove.6B\glove.6B.100d.txt" [GloVe](https://nlp.stanford.edu/projects/
 **Prepare the SemEval 2010** dataset
 
 ```bash
-python data/benchmark_data/semeval_2010/combine_semeval_dataset.py
+python data/benchmark_data/test_dataset_processing/combine_semeval_dataset.py
 ```
 
 **Prepare the ACM** dataset
 
 ```bash
-python data/benchmark_data/acm_parser.py
+python data/benchmark_data/test_dataset_processing/acm_parser.py
 ```
 
 
@@ -137,37 +167,37 @@ python load_preprocessed_data.py
 Prepare the test datasets for the **first three paragraphs of the full-text** experiments
 
 ```bash
-python data/benchmark_data/first_paragraphs_fulltext/
+data/benchmark_data/first_paragraphs_fulltext/
 ```
 
 Prepare the test datasets for the **complete abstract** experiments
 
 ```bash
-python data/benchmark_data/full_abstract/
+data/benchmark_data/full_abstract/
 ```
 
 Prepare the test datasets for the **full-text split into paragraphs** experiments
 
 ```bash
-python data/benchmark_data/paragraph_fulltext/
+data/benchmark_data/paragraph_fulltext/
 ```
 
 Prepare the test datasets for the **abstract split into sentences** experiments
 
 ```bash
-python data/benchmark_data/sentence_abstract/
+data/benchmark_data/sentence_abstract/
 ```
 
 Prepare the test datasets for the **full-text split into sentences** experiments
 
 ```bash
-python data/benchmark_data/sentence_fulltext/
+data/benchmark_data/sentence_fulltext/
 ```
 
 Prepare the test datasets for the **summarization of the full-text** experiments
 
 ```bash
-python data/benchmark_data/summarization_experiment/
+data/benchmark_data/summarization_experiment/
 ```
 
 
@@ -201,7 +231,7 @@ python combined_summary_abstract_load_pretrained_model.py
 
 
 
-### Citation
+## Citation
 
 Please cite the following paper if you are interested in using our code.
 
