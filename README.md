@@ -43,7 +43,7 @@ Place the ``KP20K`` datasets (``kp20k_training.json``, ``kp20k_validation.json``
 \data\
 ```
 
-For the NUS dataset:
+For the ``NUS`` dataset:
 - move the file ``data/json/nus/nus_test.json`` to ``data/benchmark_data/`` and rename it to ``NUS.json``
 
 
@@ -51,7 +51,7 @@ For the ``ACM`` dataset (create folders if not existing):
 - place the contents of ``src/all_docs_abstacts_refined.zip`` inside the folder ``data/benchmark_data/test_dataset_processing/ACM/``,
 - place the contents of ``references/test.author.stem.json`` in ``data/benchmark_data/test_dataset_processing/ACM/all_keys_in_json/``
 
-For the SemEval 2010 dataset (create folders if not existing):
+For the ``SemEval 2010`` dataset (create folders if not existing):
 - place the contents of both the``train/`` and ``test/`` folders into the project folder ``data/benchmark_data/test_dataset_processing/semeval_2010/train_test_combined/``,
 - manually merge the files ``references/train.combined.stem.json`` and ``references/test.combined.stem.json`` into a file named ``train_test.combined.stem.json``, and, place it in ``data/benchmark_data/test_dataset_processing/semeval_2010/``
 
