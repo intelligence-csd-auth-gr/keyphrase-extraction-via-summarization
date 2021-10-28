@@ -54,7 +54,7 @@ For the ``NUS`` dataset:
 
 For the ``ACM`` dataset (create folders if not existing):
 - place the contents of ``src/all_docs_abstacts_refined.zip`` inside the folder ``data/benchmark_data/test_dataset_processing/ACM/``,
-- place the contents of ``references/test.author.stem.json`` in ``data/benchmark_data/test_dataset_processing/ACM/all_keys_in_json/``
+- place the file ``references/test.author.stem.json`` in ``data/benchmark_data/test_dataset_processing/ACM/all_keys_in_json/``
 
 For the ``SemEval 2010`` dataset (create folders if not existing):
 - place the contents of both the``train/`` and ``test/`` folders into the project folder ``data/benchmark_data/test_dataset_processing/semeval_2010/train_test_combined/``,
@@ -63,7 +63,7 @@ For the ``SemEval 2010`` dataset (create folders if not existing):
 
 ### Download Pre-trained Word Embeddings
 
-Download "glove.6B/glove.6B.100d.txt" [GloVe](https://nlp.stanford.edu/projects/glove/) embeddings and place them in the project folder under the path:
+Download "glove.6B/glove.6B.100d.txt" [GloVe](https://nlp.stanford.edu/projects/glove/) embeddings and place them in the root folder of the project under the path:
 
 ```bash
 /GloVe/glove.6B/
