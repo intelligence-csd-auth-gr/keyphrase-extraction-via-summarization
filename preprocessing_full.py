@@ -9,9 +9,9 @@ from string import digits
 from pandas import json_normalize
 from numpy import savez_compressed
 from nltk.tokenize import word_tokenize
-from keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.utils import to_categorical
-from keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 from nltk.stem.snowball import SnowballStemmer as Stemmer
 
 
