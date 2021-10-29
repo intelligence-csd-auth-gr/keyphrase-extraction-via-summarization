@@ -241,7 +241,7 @@ Create a folder with the name ``pretrained_models/checkpoint/`` to store the tra
 
 
 ```bash
-python bi_lstm_crf.py --sentence_model False --select_test_set acm full abstract
+python bi_lstm_crf.py --sentence_model False --select_test_set acm_full_abstract
 ```
 
 The ``select_test_set`` argument can take the following values:
