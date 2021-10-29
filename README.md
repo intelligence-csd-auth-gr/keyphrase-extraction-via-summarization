@@ -154,24 +154,42 @@ python data/benchmark_data/clean_duplicate_papers.py
 Prepare the **KP20k** datasets (train: kp527k, validation: kp20k-v, test: kp20k)
 
 ```bash
-python preprocessing_full.py
+python preprocessing_full.py --mode train
+```
+```bash
+python preprocessing_full.py --mode validation
+```
+```bash
+python preprocessing_full.py --mode test
 ```
 
 Prepare the **KP20k split into sentences** datasets (train: kp527k, validation: kp20k-v, test: kp20k)
 
 ```bash
-python preprocessing_sentences.py
+python preprocessing_sentences.py --mode train
+```
+```bash
+python preprocessing_sentences.py --mode validation
+```
+```bash
+python preprocessing_sentences.py --mode test
 ```
 
-Change sequence size of string data without needing to pre-process data again
+Change sequence size of string data without needing to pre-process data again (the ``mode`` argument is used to select which dataset to load and ``sentence_model`` defines whether to load data split in sentences or as a whole)
 
 ```bash
-python load_preprocessed_data.py
+python load_preprocessed_data.py --mode train --sentence_model False
+```
+```bash
+python load_preprocessed_data.py --mode validation --sentence_model False
+```
+```bash
+python load_preprocessed_data.py --mode test --sentence_model False
 ```
 
 
 
-### Data pre-processing for test datsets (ACM, NUS, SemEval) - Run all scripts in the folders
+### Data pre-processing for test datasets (ACM, NUS, SemEval) - Run all scripts in the folders
 
 Prepare the test datasets for the **first three paragraphs of the full-text** experiments
 
@@ -214,28 +232,41 @@ data/benchmark_data/summarization_experiment/
 
 ### Train the model
 
+Create a folder with the name ``pretrained_models/checkpoint/`` to store the trained models
 
-**Train Bi-LSTM-CRF** model (uncomment the proper dataset file paths to select the desired test sets)
+**Train Bi-LSTM-CRF** model (the ``select_test_set`` argument is used to select which test dataset to use and ``sentence_model``defines whether to train a sentence model)
+
 
 ```bash
-python bi_lstm_crf.py
+python bi_lstm_crf.py --sentence_model False --select_test_set acm full abstract
 ```
+
+The ``select_test_set`` argument can take the following values:
+
+| experiment | select_test_set |
+| :-------- | :-------- |
+| **full abstract** | **kp20k_full_abstract** <br/> **nus_full_abstract** <br/> **acm_full_abstract** <br/> **semeval_full_abstract** |
+| **abstract in sentences** | **kp20k_sentences_abstract** <br/> **nus_sentences_abstract** <br/> **acm_sentences_abstract** <br/> **semeval_sentences_abstract** |
+| **fulltext in sentences** | **nus_sentences_fulltext** <br/> **acm_sentences_fulltext** <br/> **semeval_sentences_fulltext** |
+| **fulltext in paragraphs** | **nus_paragraph_fulltext** <br/> **acm_paragraph_fulltext** <br/> **semeval_paragraph_fulltext** |
+| **first 3 paragraphs** | **nus_220_first_3_paragraphs** <br/> **acm_220_first_3_paragraphs** <br/> **semeval_220_first_3_paragraphs** <br/> **nus_400_first_3_paragraphs** <br/> **acm_400_first_3_paragraphs** <br/> **semeval_400_first_3_paragraphs** |
+| **summarization of abstract and fulltext** | **nus_summarization** <br/> **acm_summarization** <br/> **semeval_summarization** |
 
 
 
 
 ### Load a trained model
 
-Load a **trained model**
+Load a **trained model** (the ``select_test_set`` argument is used to select which test dataset to use, ``sentence_model`` defines whether to train a sentence model, and, ``pretrained_model_path`` defines the path and the pre-trained model). The values of ``select_test_set`` and ``sentence_model`` arguments are the same as seen on the table above.
 
 ```bash
-python load_pretrained_model.py
+python load_pretrained_model.py  --sentence_model False --select_test_set acm_full_abstract --pretrained_model_path pretrained_models/checkpoint/model.03.h5
 ```
 
-Load **trained models** for the experiments of the **combined predictions of Abstract & Summaries**
+Load **trained models** for the experiments of the **combined predictions of Abstract & Summaries** (the ``select_test_set`` argument is used to select which test dataset to use, ``sentence_model`` defines whether to train a sentence model, and, ``pretrained_model_path`` defines the path and the pre-trained model). In this case, the ``select_test_set`` argument can take be either ``nus``, ``acm`` or ``semeval``.
 
 ```bash
-python combined_summary_abstract_load_pretrained_model.py
+python combined_summary_abstract_load_pretrained_model.py --sentence_model False --select_test_set acm --pretrained_model_path pretrained_models/checkpoint/model.03.h5
 ```
 
 
