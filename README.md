@@ -133,7 +133,10 @@ Download "glove.6B/glove.6B.100d.txt" [GloVe](https://nlp.stanford.edu/projects/
 
 ### Generate summarizations
 
-**Generate summarizations** for ``ACM``, ``NUS`` and ``SemEval`` datasets
+To generate smmarizations a transformer-based model was used that can be found at [TransformerSum](https://github.com/HHousen/TransformerSum). Clone the TransformerSum repository and place the script ``acm_nus_semeval_summarization.py`` in the root project folder. Next, download the ``distilroberta-base-ext-sum``	pre-trained model, trained on the arXiv-PubMed dataset and place it in the root of the project in a folder named ``models/``. In the ``datasets/`` folder drop the datasets to be summarized (``NUS.json``, ``ACM.json`` and ``semeval_2010.json``).
+
+
+**Generate summarizations** for all ``ACM``, ``NUS`` and ``SemEval`` datasets
 
 ```bash
 python acm_nus_semeval_summarization.py
