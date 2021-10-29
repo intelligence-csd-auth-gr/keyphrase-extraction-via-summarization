@@ -61,15 +61,15 @@ For the ``SemEval 2010`` dataset (create folders if not existing):
 
 
 
-**Convert format of ACM and SemEval 2010 datasets**
+**Convert format** of ``ACM`` and ``SemEval 2010`` datasets
 
-**Prepare the SemEval 2010** dataset
+- **Prepare the SemEval 2010** dataset
 
 ```bash
 python data/benchmark_data/test_dataset_processing/combine_semeval_dataset.py
 ```
 
-**Prepare the ACM** dataset
+- **Prepare the ACM** dataset
 
 ```bash
 python data/benchmark_data/test_dataset_processing/acm_parser.py
