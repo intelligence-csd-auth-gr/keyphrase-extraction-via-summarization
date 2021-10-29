@@ -1,4 +1,5 @@
 import re
+import sys
 import json
 import pickle
 import string
@@ -8,6 +9,7 @@ import pandas as pd
 from string import digits
 from pandas import json_normalize
 from numpy import savez_compressed
+from argparse import ArgumentParser
 from nltk.tokenize import word_tokenize
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.utils import to_categorical
@@ -23,31 +25,44 @@ pd.set_option('display.max_columns', None)
 
 
 # ======================================================================================================================
+# Argument parsing
+# ======================================================================================================================
+
+parser = ArgumentParser()
+parser.add_argument("-m", "--mode", type=str, help="choose which type of data to create (options are: train, validation or test)")
+
+args = parser.parse_args()
+
+
+# ======================================================================================================================
 # Set batch size and file names in which pre-processed data will be saved
 # ======================================================================================================================
 
-# reading the initial JSON data using json.load()
-file = 'data\\kp20k_training.json'  # TRAIN data
-# file = 'data\\kp20k_validation.json'  # VALIDATION data to tune model parameters
-# file = 'data\\kp20k_testing.json'  # TEST data to evaluate the final model
+if args.mode == 'train':
+    # reading the initial JSON data using json.load()
+    file = 'data\\kp20k_training.json'  # TRAIN data
 
+    # Define the file paths and names to save TRAIN data
+    x_filename = 'data\\preprocessed_data\\x_TRAIN_data_preprocessed'
+    y_filename = 'data\\preprocessed_data\\y_TRAIN_data_preprocessed'
+elif args.mode == 'validation':
+    # reading the initial JSON data using json.load()
+    file = 'data\\kp20k_validation.json'  # VALIDATION data to tune model parameters
 
-# Define the file paths and names to save TRAIN data
-x_filename = 'data\\preprocessed_data\\x_TRAIN_data_preprocessed'
-y_filename = 'data\\preprocessed_data\\y_TRAIN_data_preprocessed'
+    # Define the file paths and names to save VALIDATION data to tune model parameters
+    x_filename = 'data\\preprocessed_data\\x_VALIDATION_data_preprocessed'
+    y_filename = 'data\\preprocessed_data\\y_VALIDATION_data_preprocessed'
+elif args.mode == 'test':
+    # reading the initial JSON data using json.load()
+    file = 'data\\kp20k_testing.json'  # TEST data to evaluate the final model
 
+    # Define the file paths and names to save TEST data to evaluate the final model
+    x_filename = 'data\\preprocessed_data\\x_TEST_data_preprocessed'
+    y_filename = 'data\\preprocessed_data\\y_TEST_data_preprocessed'
+else:
+    print('WRONG ARGUMENTS! - please fill the argument "-m" or "--mode" with one of the values "train", "validation" or "test"')
+    sys.exit()
 
-'''
-# Define the file paths and names to save VALIDATION data to tune model parameters
-x_filename = 'data\\preprocessed_data\\x_VALIDATION_data_preprocessed'
-y_filename = 'data\\preprocessed_data\\y_VALIDATION_data_preprocessed'
-'''
-
-'''
-# Define the file paths and names to save TEST data to evaluate the final model
-x_filename = 'data\\preprocessed_data\\x_TEST_data_preprocessed'
-y_filename = 'data\\preprocessed_data\\y_TEST_data_preprocessed'
-'''
 # save preprosessed text for TEST data - use for EVALUATION (exact/partial matching)
 x_text_filename = 'data\\preprocessed_data\\x_TEST_preprocessed_TEXT'  # save preprosessed text for TEST data
 y_text_filename = 'data\\preprocessed_data\\y_TEST_preprocessed_TEXT'  # save preprosessed keyphrases for TEST data

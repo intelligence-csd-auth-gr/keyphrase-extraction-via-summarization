@@ -1,4 +1,5 @@
 import ast  # translate string back to list of lists (when reading dataframe, lists of lists are read as strings)
+import sys
 import time
 import tables  # load compressed data files
 import numpy as np
@@ -11,13 +12,14 @@ import sequence_evaluation
 import traditional_evaluation
 from datetime import timedelta
 from tensorflow import constant  # used to convert array/list to a Keras Tensor
-from keras.optimizers import SGD
-from keras.utils import plot_model
-from keras.optimizers import RMSprop
-from keras.models import Model, Input
+from argparse import ArgumentParser
+from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.utils import plot_model
+from tensorflow.keras.optimizers import RMSprop
+from tensorflow.keras import Model, Input
 from data_generator import DataGenerator
-from keras.optimizers.schedules import ExponentialDecay, InverseTimeDecay
-from keras.layers import LSTM, Embedding, Dense, TimeDistributed, Dropout, Bidirectional
+from tensorflow.keras.optimizers.schedules import ExponentialDecay, InverseTimeDecay
+from tensorflow.keras.layers import LSTM, Embedding, Dense, TimeDistributed, Dropout, Bidirectional
 
 pd.set_option('display.max_columns', None)
 
@@ -30,24 +32,40 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
 # ======================================================================================================================
+# Argument parsing
+# ======================================================================================================================
+
+parser = ArgumentParser()
+
+parser.add_argument("-sts", "--select_test_set", type=str, default=False,
+                    help="select the test set to evaluate the model (options are: nus, acm or semeval)")
+
+parser.add_argument("-pmp", "--pretrained_model_path", type=str, default=False,
+                    help="the path and the name of the pretrained model")
+
+parser.add_argument("-sm", "--sentence_model", type=bool, default=False,
+                    help="choose which data to load (options are: True for sentence model or False for whole title and abstracts model)")
+
+args = parser.parse_args()
+
+
+# ======================================================================================================================
 # Set data generators for batch training
 # ======================================================================================================================
 
-sentence_model = False  # True  False
-
-if sentence_model:
+if args.sentence_model:
     # Set batch size, train and test data size
     batch_size = 256#224  # 1024  # set during pre-processing (set in file preprocessing.py)
     train_data_size = 4136306#4139868  # 530809  [ THE NUMBER OF TRAIN SENTENCES\DOCS ]  # the total size of train data
     validation_data_size = 156519#156836  # 20000  [ THE NUMBER OF VALIDATION SENTENCES\DOCS ]  # the total size of test data
-    test_data_size = 155801#156085  # 156085  SEE BELOW [ THE NUMBER OF TEST SENTENCES\DOCS ]  # the total size of test data
+    #test_data_size = 155801#156085  # 156085  SEE BELOW [ THE NUMBER OF TEST SENTENCES\DOCS ]  # the total size of test data
 
     # Set INPUT layer size
     MAX_LEN = 40  # 70  # max length of abstract and title (together) (full text train set: 2763)
 else:
     # Set batch size,train and test data size
     batch_size = 64  # 1024  # set during pre-processing (set in file preprocessing.py)
-    test_data_size = 244  # 20000  SEE BELOW [ THE NUMBER OF TEST SENTENCES\DOCS ]  # the total size of test data
+    #test_data_size = 244  # 20000  SEE BELOW [ THE NUMBER OF TEST SENTENCES\DOCS ]  # the total size of test data
 
     # Set INPUT layer size
     # set to 220 for full-text split in paragraphs (paragraphs that have above 220 length exist - need to be cropped for sequence evaluation)
@@ -68,28 +86,31 @@ print('VOCABULARY', doc_vocab)
 # Define file names for TESTING-EVALUATION of the final model (GOLD sets, preprocessed document text + keyphrases)
 # ======================================================================================================================
 
-# Summarization fo abstract and fulltext
-'''
-# [ test_data_size = 211 ]
-x_test_filename = 'data\\preprocessed_data\\summarization_experiment\\x_NUS_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed.hdf'
-y_test_filename = 'data\\preprocessed_data\\summarization_experiment\\y_NUS_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed'
-x_filename_summarization = 'data\\preprocessed_data\\summarization_experiment\\x_NUS_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
-y_filename = 'data\\preprocessed_data\\summarization_experiment\\y_NUS_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
-'''
-'''
-# [ test_data_size = 2304 ]
-x_test_filename = 'data\\preprocessed_data\\summarization_experiment\\x_ACM_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed.hdf'
-y_test_filename = 'data\\preprocessed_data\\summarization_experiment\\y_ACM_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed'
-x_filename_summarization = 'data\\preprocessed_data\\summarization_experiment\\x_ACM_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
-y_filename = 'data\\preprocessed_data\\summarization_experiment\\y_ACM_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
-
-'''
-# [ test_data_size = 244 ]
-x_test_filename = 'data\\preprocessed_data\\summarization_experiment\\x_SEMEVAL_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed.hdf'
-y_test_filename = 'data\\preprocessed_data\\summarization_experiment\\y_SEMEVAL_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed'
-x_filename_summarization = 'data\\preprocessed_data\\summarization_experiment\\x_SEMEVAL_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
-y_filename = 'data\\preprocessed_data\\summarization_experiment\\y_SEMEVAL_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
-
+# Summarization of abstract and fulltext
+if args.select_test_set=="nus":
+    # [ test_data_size = 211 ]
+    test_data_size = 211
+    x_test_filename = 'data\\preprocessed_data\\summarization_experiment\\x_NUS_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\summarization_experiment\\y_NUS_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed'
+    x_filename_summarization = 'data\\preprocessed_data\\summarization_experiment\\x_NUS_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\summarization_experiment\\y_NUS_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
+elif args.select_test_set=="acm":
+    # [ test_data_size = 2304 ]
+    test_data_size = 2304
+    x_test_filename = 'data\\preprocessed_data\\summarization_experiment\\x_ACM_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\summarization_experiment\\y_ACM_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed'
+    x_filename_summarization = 'data\\preprocessed_data\\summarization_experiment\\x_ACM_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\summarization_experiment\\y_ACM_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
+elif args.select_test_set=="semeval":
+    # [ test_data_size = 244 ]
+    test_data_size = 244
+    x_test_filename = 'data\\preprocessed_data\\summarization_experiment\\x_SEMEVAL_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\summarization_experiment\\y_SEMEVAL_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed'
+    x_filename_summarization = 'data\\preprocessed_data\\summarization_experiment\\x_SEMEVAL_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\summarization_experiment\\y_SEMEVAL_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
+else:
+    print('WRONG ARGUMENTS! - please fill the argument "-sts" or "--select_test_set" with one of the proper values (acm, nus or semeval)')
+    sys.exit()
 
 
 # ======================================================================================================================
@@ -162,7 +183,7 @@ test_generator = DataGenerator(x_test_filename, '', test_steps, batch_size=batch
 
 # save_all_weights | load_all_weights: saves model and optimizer weights (save_weights and save)
 # load_status = model.load_weights("pretrained_models\\fulltext_model_weights.h5")  # sentences_model_weights.h5
-load_status = model.load_weights("pretrained_models\\well tuned - run 1\\checkpoint\\model.05.h5")  # sentences_model_weights.h5
+load_status = model.load_weights(args.pretrained_model_path)  # sentences_model_weights.h5
 #
 
 # `assert_consumed` can be used as validation that all variable values have been
@@ -202,21 +223,19 @@ print('\nY_PRED SHAPE', np.array(y_pred_summaries, dtype=object).shape)
 # Set data generators for batch training
 # ======================================================================================================================
 
-sentence_model = False  # True  False
-
-if sentence_model:
+if args.sentence_model:
     # Set batch size, train and test data size
     batch_size = 256#224  # 1024  # set during pre-processing (set in file preprocessing.py)
     train_data_size = 4136306#4139868  # 530809  [ THE NUMBER OF TRAIN SENTENCES\DOCS ]  # the total size of train data
     validation_data_size = 156519#156836  # 20000  [ THE NUMBER OF VALIDATION SENTENCES\DOCS ]  # the total size of test data
-    test_data_size = 155801#156085  # 156085  SEE BELOW [ THE NUMBER OF TEST SENTENCES\DOCS ]  # the total size of test data
+    #test_data_size = 155801#156085  # 156085  SEE BELOW [ THE NUMBER OF TEST SENTENCES\DOCS ]  # the total size of test data
 
     # Set INPUT layer size
     MAX_LEN = 40  # 70  # max length of abstract and title (together) (full text train set: 2763)
 else:
     # Set batch size,train and test data size
     batch_size = 64  # 1024  # set during pre-processing (set in file preprocessing.py)
-    test_data_size = 244  # 20000  SEE BELOW [ THE NUMBER OF TEST SENTENCES\DOCS ]  # the total size of test data
+    #test_data_size = 244  # 20000  SEE BELOW [ THE NUMBER OF TEST SENTENCES\DOCS ]  # the total size of test data
 
     # Set INPUT layer size
     # set to 220 for full-text split in paragraphs (paragraphs that have above 220 length exist - need to be cropped for sequence evaluation)
@@ -238,26 +257,30 @@ print('VOCABULARY', doc_vocab)
 # ======================================================================================================================
 
 # Full abstract
-'''
-# [ test_data_size = 211 ]
-x_test_filename = 'data\\preprocessed_data\\full_abstract\\x_NUS_FULL_ABSTRACT_TEST_data_preprocessed.hdf'
-y_test_filename = 'data\\preprocessed_data\\full_abstract\\y_NUS_FULL_ABSTRACT_TEST_data_preprocessed'
-x_filename = 'data\\preprocessed_data\\full_abstract\\x_NUS_FULL_ABSTRACT_preprocessed_TEXT'
-y_filename = 'data\\preprocessed_data\\full_abstract\\y_NUS_FULL_ABSTRACT_preprocessed_TEXT'
-'''
-'''
-# [ test_data_size = 2304 ]
-x_test_filename = 'data\\preprocessed_data\\full_abstract\\x_ACM_FULL_ABSTRACT_TEST_vectors.hdf'
-y_test_filename = 'data\\preprocessed_data\\full_abstract\\y_ACM_FULL_ABSTRACT_TEST_vectors'
-x_filename = 'data\\preprocessed_data\\full_abstract\\x_ACM_FULL_ABSTRACT_preprocessed_TEXT'
-y_filename = 'data\\preprocessed_data\\full_abstract\\y_ACM_FULL_ABSTRACT_preprocessed_TEXT'
-
-'''
-# [ test_data_size = 244 ]
-x_test_filename = 'data\\preprocessed_data\\full_abstract\\x_SEMEVAL_FULL_ABSTRACT_TEST_data_preprocessed.hdf'
-y_test_filename = 'data\\preprocessed_data\\full_abstract\\y_SEMEVAL_FULL_ABSTRACT_TEST_data_preprocessed'
-x_filename = 'data\\preprocessed_data\\full_abstract\\x_SEMEVAL_FULL_ABSTRACT_preprocessed_TEXT'
-y_filename = 'data\\preprocessed_data\\full_abstract\\y_SEMEVAL_FULL_ABSTRACT_preprocessed_TEXT'
+if args.select_test_set=="nus":
+    # [ test_data_size = 211 ]
+    test_data_size = 211
+    x_test_filename = 'data\\preprocessed_data\\full_abstract\\x_NUS_FULL_ABSTRACT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\full_abstract\\y_NUS_FULL_ABSTRACT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\full_abstract\\x_NUS_FULL_ABSTRACT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\full_abstract\\y_NUS_FULL_ABSTRACT_preprocessed_TEXT'
+elif args.select_test_set=="acm":
+    # [ test_data_size = 2304 ]
+    test_data_size = 2304
+    x_test_filename = 'data\\preprocessed_data\\full_abstract\\x_ACM_FULL_ABSTRACT_TEST_vectors.hdf'
+    y_test_filename = 'data\\preprocessed_data\\full_abstract\\y_ACM_FULL_ABSTRACT_TEST_vectors'
+    x_filename = 'data\\preprocessed_data\\full_abstract\\x_ACM_FULL_ABSTRACT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\full_abstract\\y_ACM_FULL_ABSTRACT_preprocessed_TEXT'
+elif args.select_test_set=="semeval":
+    # [ test_data_size = 244 ]
+    test_data_size = 244
+    x_test_filename = 'data\\preprocessed_data\\full_abstract\\x_SEMEVAL_FULL_ABSTRACT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\full_abstract\\y_SEMEVAL_FULL_ABSTRACT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\full_abstract\\x_SEMEVAL_FULL_ABSTRACT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\full_abstract\\y_SEMEVAL_FULL_ABSTRACT_preprocessed_TEXT'
+else:
+    print('WRONG ARGUMENTS! - please fill the argument "-sts" or "--select_test_set" with one of the proper values')
+    sys.exit()
 
 
 # ======================================================================================================================
@@ -322,8 +345,7 @@ test_generator = DataGenerator(x_test_filename, '', test_steps, batch_size=batch
 
 # save_all_weights | load_all_weights: saves model and optimizer weights (save_weights and save)
 # load_status = model.load_weights("pretrained_models\\fulltext_model_weights.h5")  # sentences_model_weights.h5
-load_status = model.load_weights("pretrained_models\\well tuned - run 1\\checkpoint\\model.05.h5")  # sentences_model_weights.h5
-#
+load_status = model.load_weights(args.pretrained_model_path)  # sentences_model_weights.h5
 
 # `assert_consumed` can be used as validation that all variable values have been
 # restored from the checkpoint. See `tf.train.Checkpoint.restore` for other

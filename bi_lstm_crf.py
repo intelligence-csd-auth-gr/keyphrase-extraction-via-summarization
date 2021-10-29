@@ -11,18 +11,19 @@ import traditional_evaluation
 from datetime import timedelta
 import matplotlib.pyplot as plt
 from tensorflow import constant  # used to convert array/list to a Keras Tensor
-from keras.optimizers import SGD
-from keras.regularizers import l1
-from keras.utils import plot_model
+from argparse import ArgumentParser
+from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.regularizers import l1
+from tensorflow.keras.utils import plot_model
 from sklearn.metrics import f1_score
-from keras.optimizers import RMSprop
-from keras.models import Model, Input
-from keras.constraints import max_norm
-from keras.callbacks import TensorBoard
+from tensorflow.keras.optimizers import RMSprop
+from tensorflow.keras import Model, Input
+from tensorflow.keras.constraints import max_norm
+from tensorflow.keras.callbacks import TensorBoard
 from data_generator import DataGenerator
-from keras.callbacks import LearningRateScheduler
-from keras.optimizers.schedules import ExponentialDecay, InverseTimeDecay
-from keras.layers import LSTM, Embedding, Dense, TimeDistributed, Dropout, Bidirectional
+from tensorflow.keras.callbacks import LearningRateScheduler
+from tensorflow.keras.optimizers.schedules import ExponentialDecay, InverseTimeDecay
+from tensorflow.keras.layers import LSTM, Embedding, Dense, TimeDistributed, Dropout, Bidirectional
 
 
 pd.set_option('display.max_columns', None)
@@ -65,18 +66,63 @@ config.gpu_options.per_process_gpu_memory_fraction = 0.2
 config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
 '''
+
+
+# ======================================================================================================================
+# Argument parsing
+# ======================================================================================================================
+
+parser = ArgumentParser()
+
+parser.add_argument("-sts", "--select_test_set", type=str, default=False,
+                    help="select the test set to evaluate the model (options are:"
+                         "'kp20k_full_abstract'"
+                         "'nus_full_abstract'"
+                         "'acm_full_abstract'"
+                         "'semeval_full_abstract'"
+                         ""
+                         "'kp20k_sentences_abstract'"
+                         "'nus_sentences_abstract'"
+                         "'acm_sentences_abstract'"
+                         "'semeval_sentences_abstract'"
+                         ""
+                         "'nus_sentences_fulltext'"
+                         "'acm_sentences_fulltext'"
+                         "'semeval_sentences_fulltext'"
+                         ""
+                         "'nus_paragraph_fulltext'"
+                         "'acm_paragraph_fulltext'"
+                         "'semeval_paragraph_fulltext'"
+                         ""
+                         "'nus_220_first_3_paragraphs'"
+                         "'acm_220_first_3_paragraphs'"
+                         "'semeval_220_first_3_paragraphs'"
+                         "'nus_400_first_3_paragraphs'"
+                         "'acm_400_first_3_paragraphs'"
+                         "'semeval_400_first_3_paragraphs'"
+                         ""
+                         "'nus_summarization'"
+                         "'acm_summarization'"
+                         "'semeval_summarization'"
+                         ")"
+                    )
+
+parser.add_argument("-sm", "--sentence_model", type=bool, default=False,
+                    help="choose which data to load (options are: True for sentence model or False for whole title and abstracts model)")
+
+args = parser.parse_args()
+
+
 # ======================================================================================================================
 # Set data generators for batch training
 # ======================================================================================================================
 
-sentence_model = False  # True  False
-
-if sentence_model:
+if args.sentence_model:
     # Set batch size, train and test data size
     batch_size = 256#352#224  # 1024  # set during pre-processing (set in file preprocessing.py)
     train_data_size = 4136306#4139868  # 4147964  [ THE NUMBER OF TRAIN SENTENCES\DOCS ]  # the total size of train data
     validation_data_size = 156519#156836  # 156836  [ THE NUMBER OF VALIDATION SENTENCES\DOCS ]  # the total size of test data
-    test_data_size = 155801#156085  # 156085  SEE BELOW [ THE NUMBER OF TEST SENTENCES\DOCS ]  # the total size of test data
+    #test_data_size = 155801#156085  # 156085  SEE BELOW [ THE NUMBER OF TEST SENTENCES\DOCS ]  # the total size of test data
 
     # Set INPUT layer size
     MAX_LEN = 40#50  # 70  # max length of abstract and title (together) (full text train set: 2763)
@@ -85,7 +131,7 @@ else:
     batch_size = 64 #32  # 1024  # set during pre-processing (set in file preprocessing.py)
     train_data_size = 530390 #530809  # 530880  [ THE NUMBER OF TRAIN SENTENCES\DOCS ]  # the total size of train data
     validation_data_size = 20000  # 20064  # 20000  [ THE NUMBER OF VALIDATION SENTENCES\DOCS ]  # the total size of test data
-    test_data_size = 20000  # 20064  # 20000  SEE BELOW [ THE NUMBER OF TEST SENTENCES\DOCS ]  # the total size of test data
+    #test_data_size = 20000  # 20064  # 20000  SEE BELOW [ THE NUMBER OF TEST SENTENCES\DOCS ]  # the total size of test data
 
     # Set INPUT layer size
     MAX_LEN = 400  # 500  # 70  # max length of abstract and title (together) (full text train set: 2763)
@@ -106,23 +152,22 @@ print('VOCABULARY', doc_vocab)
 # Define train/test data file names
 # ======================================================================================================================
 
-# [FULL ABSTRACT TEXT - train_data_size = 530390] Define the file paths and names for TRAINING data
-x_train_filename = 'data\\preprocessed_data\\x_TRAIN_data_preprocessed.hdf'
-y_train_filename = 'data\\preprocessed_data\\y_TRAIN_data_preprocessed.hdf'
+if args.sentence_model:
+    # [SENTENCES ABSTRACT TEXT - train_data_size = 4136306] Define the file paths and names for TRAINING data
+    x_train_filename = 'data\\preprocessed_data\\x_TRAIN_SENTENC_data_preprocessed.hdf'
+    y_train_filename = 'data\\preprocessed_data\\y_TRAIN_SENTENC_data_preprocessed.hdf'
 
-# [FULL ABSTRACT TEXT - validation_data_size = 20000] Define the file paths and names for VALIDATION data to tune model parameters
-x_validate_filename = 'data\\preprocessed_data\\x_VALIDATION_data_preprocessed.hdf'
-y_validate_filename = 'data\\preprocessed_data\\y_VALIDATION_data_preprocessed.hdf'
+    # [SENTENCES ABSTRACT TEXT - validation_data_size = 156519] Define the file paths and names for VALIDATION data to tune model parameters
+    x_validate_filename = 'data\\preprocessed_data\\x_VALIDATION_SENTENC_data_preprocessed.hdf'
+    y_validate_filename = 'data\\preprocessed_data\\y_VALIDATION_SENTENC_data_preprocessed.hdf'
+else:
+    # [FULL ABSTRACT TEXT - train_data_size = 530390] Define the file paths and names for TRAINING data
+    x_train_filename = 'data\\preprocessed_data\\x_TRAIN_data_preprocessed.hdf'
+    y_train_filename = 'data\\preprocessed_data\\y_TRAIN_data_preprocessed.hdf'
 
-'''
-# [SENTENCES ABSTRACT TEXT - train_data_size = 4136306] Define the file paths and names for TRAINING data
-x_train_filename = 'data\\preprocessed_data\\x_TRAIN_SENTENC_data_preprocessed.hdf'
-y_train_filename = 'data\\preprocessed_data\\y_TRAIN_SENTENC_data_preprocessed.hdf'
-
-# [SENTENCES ABSTRACT TEXT - validation_data_size = 156519] Define the file paths and names for VALIDATION data to tune model parameters
-x_validate_filename = 'data\\preprocessed_data\\x_VALIDATION_SENTENC_data_preprocessed.hdf'
-y_validate_filename = 'data\\preprocessed_data\\y_VALIDATION_SENTENC_data_preprocessed.hdf'
-'''
+    # [FULL ABSTRACT TEXT - validation_data_size = 20000] Define the file paths and names for VALIDATION data to tune model parameters
+    x_validate_filename = 'data\\preprocessed_data\\x_VALIDATION_data_preprocessed.hdf'
+    y_validate_filename = 'data\\preprocessed_data\\y_VALIDATION_data_preprocessed.hdf'
 
 
 # ======================================================================================================================
@@ -130,83 +175,181 @@ y_validate_filename = 'data\\preprocessed_data\\y_VALIDATION_SENTENC_data_prepro
 # ======================================================================================================================
 
 # Full abstract
-
-# [ test_data_size = 20000 ]
-x_test_filename = 'data\\preprocessed_data\\x_TEST_data_preprocessed.hdf'  # kp20k
-y_test_filename = 'data\\preprocessed_data\\y_TEST_data_preprocessed'
-x_filename = 'data\\preprocessed_data\\x_TEST_preprocessed_TEXT'  # kp20k
-y_filename = 'data\\preprocessed_data\\y_TEST_preprocessed_TEXT'  # kp20k
-
-'''
-# [ test_data_size = 211 ]
-x_test_filename = 'data\\preprocessed_data\\full_abstract\\x_NUS_FULL_ABSTRACT_TEST_data_preprocessed.hdf'
-y_test_filename = 'data\\preprocessed_data\\full_abstract\\y_NUS_FULL_ABSTRACT_TEST_data_preprocessed'
-x_filename = 'data\\preprocessed_data\\full_abstract\\x_NUS_FULL_ABSTRACT_preprocessed_TEXT'
-y_filename = 'data\\preprocessed_data\\full_abstract\\y_NUS_FULL_ABSTRACT_preprocessed_TEXT'
-'''
-'''
-# [ test_data_size = 2304 ]
-x_test_filename = 'data\\preprocessed_data\\full_abstract\\x_ACM_FULL_ABSTRACT_TEST_vectors.hdf'
-y_test_filename = 'data\\preprocessed_data\\full_abstract\\y_ACM_FULL_ABSTRACT_TEST_vectors'
-x_filename = 'data\\preprocessed_data\\full_abstract\\x_ACM_FULL_ABSTRACT_preprocessed_TEXT'
-y_filename = 'data\\preprocessed_data\\full_abstract\\y_ACM_FULL_ABSTRACT_preprocessed_TEXT'
-'''
+if args.select_test_set=="kp20k full abstract":
+    # [ test_data_size = 20000 ]
+    test_data_size = 20000
+    x_test_filename = 'data\\preprocessed_data\\data_train1\\x_TEST_data_preprocessed.hdf'  # kp20k
+    y_test_filename = 'data\\preprocessed_data\\data_train1\\y_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\data_train1\\x_TEST_preprocessed_TEXT'  # kp20k
+    y_filename = 'data\\preprocessed_data\\data_train1\\y_TEST_preprocessed_TEXT'  # kp20k
+elif args.select_test_set=="nus full abstract":
+    # [ test_data_size = 211 ]
+    test_data_size = 211
+    x_test_filename = 'data\\preprocessed_data\\full_abstract\\x_NUS_FULL_ABSTRACT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\full_abstract\\y_NUS_FULL_ABSTRACT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\full_abstract\\x_NUS_FULL_ABSTRACT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\full_abstract\\y_NUS_FULL_ABSTRACT_preprocessed_TEXT'
+elif args.select_test_set=="acm full abstract":
+    # [ test_data_size = 2304 ]
+    test_data_size = 2304
+    x_test_filename = 'data\\preprocessed_data\\full_abstract\\x_ACM_FULL_ABSTRACT_TEST_vectors.hdf'
+    y_test_filename = 'data\\preprocessed_data\\full_abstract\\y_ACM_FULL_ABSTRACT_TEST_vectors'
+    x_filename = 'data\\preprocessed_data\\full_abstract\\x_ACM_FULL_ABSTRACT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\full_abstract\\y_ACM_FULL_ABSTRACT_preprocessed_TEXT'
+elif args.select_test_set=="semeval full abstract":
+    # [ test_data_size = 244 ]
+    test_data_size = 244
+    x_test_filename = 'data\\preprocessed_data\\full_abstract\\x_SEMEVAL_FULL_ABSTRACT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\full_abstract\\y_SEMEVAL_FULL_ABSTRACT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\full_abstract\\x_SEMEVAL_FULL_ABSTRACT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\full_abstract\\y_SEMEVAL_FULL_ABSTRACT_preprocessed_TEXT'
 
 # Sentences abstract
-'''
-# [ test_data_size = 155801 ]
-x_test_filename = 'data\\preprocessed_data\\x_TEST_SENTENC_data_preprocessed.hdf'  # kp20k
-y_test_filename = 'data\\preprocessed_data\\y_TEST_SENTENC_data_preprocessed'
-x_filename = 'data\\preprocessed_data\\x_TEST_SENTENC_preprocessed_TEXT'  # kp20k
-y_filename = 'data\\preprocessed_data\\y_TEST_SENTENC_preprocessed_TEXT'  # kp20k
-'''
-'''
-# [ test_data_size = 1673 ]
-x_test_filename = 'data\\preprocessed_data\\sentence_abstract\\x_NUS_SENTEC_ABSTRACT_TEST_data_preprocessed.hdf'
-y_test_filename = 'data\\preprocessed_data\\sentence_abstract\\y_NUS_SENTEC_ABSTRACT_TEST_data_preprocessed'
-x_filename = 'data\\preprocessed_data\\sentence_abstract\\x_NUS_SENTEC_ABSTRACT_preprocessed_TEXT'
-y_filename = 'data\\preprocessed_data\\sentence_abstract\\y_NUS_SENTEC_ABSTRACT_preprocessed_TEXT'
-'''
-'''
-# [ test_data_size = 17486 ]
-x_test_filename = 'data\\preprocessed_data\\sentence_abstract\\x_ACM_SENTENC_ABSTRACT_TEST_data_preprocessed.hdf'
-y_test_filename = 'data\\preprocessed_data\\sentence_abstract\\y_ACM_SENTENC_ABSTRACT_TEST_data_preprocessed'
-x_filename = 'data\\preprocessed_data\\sentence_abstract\\x_ACM_SENTENC_ABSTRACT_preprocessed_TEXT'
-y_filename = 'data\\preprocessed_data\\sentence_abstract\\y_ACM_SENTENC_ABSTRACT_preprocessed_TEXT'
-'''
+elif args.select_test_set=="kp20k sentences abstract":
+    # [ test_data_size = 155801 ]
+    test_data_size = 155801
+    x_test_filename = 'data\\preprocessed_data\\x_TEST_SENTENC_data_preprocessed.hdf'  # kp20k
+    y_test_filename = 'data\\preprocessed_data\\y_TEST_SENTENC_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\x_TEST_SENTENC_preprocessed_TEXT'  # kp20k
+    y_filename = 'data\\preprocessed_data\\y_TEST_SENTENC_preprocessed_TEXT'  # kp20k
+elif args.select_test_set=="nus sentences abstract":
+    # [ test_data_size = 1673 ]
+    test_data_size = 1673
+    x_test_filename = 'data\\preprocessed_data\\sentence_abstract\\x_NUS_SENTEC_ABSTRACT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\sentence_abstract\\y_NUS_SENTEC_ABSTRACT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\sentence_abstract\\x_NUS_SENTEC_ABSTRACT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\sentence_abstract\\y_NUS_SENTEC_ABSTRACT_preprocessed_TEXT'
+elif args.select_test_set=="acm sentences abstract":
+    # [ test_data_size = 17481 ]
+    test_data_size = 17481
+    x_test_filename = 'data\\preprocessed_data\\sentence_abstract\\x_ACM_SENTENC_ABSTRACT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\sentence_abstract\\y_ACM_SENTENC_ABSTRACT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\sentence_abstract\\x_ACM_SENTENC_ABSTRACT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\sentence_abstract\\y_ACM_SENTENC_ABSTRACT_preprocessed_TEXT'
+elif args.select_test_set=="semeval sentences abstract":
+    # [ test_data_size = 1979 ]
+    test_data_size = 1979
+    x_test_filename = 'data\\preprocessed_data\\sentence_abstract\\x_SEMEVAL_SENTEC_ABSTRACT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\sentence_abstract\\y_SEMEVAL_SENTEC_ABSTRACT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\sentence_abstract\\x_SEMEVAL_SENTEC_ABSTRACT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\sentence_abstract\\y_SEMEVAL_SENTEC_ABSTRACT_preprocessed_TEXT'
 
 # Sentences fulltext
-'''
-# [ test_data_size = 74183 ]
-x_test_filename = 'data\\preprocessed_data\\sentence_fulltext\\x_NUS_SENTEC_FULLTEXT_TEST_data_preprocessed.hdf'
-y_test_filename = 'data\\preprocessed_data\\sentence_fulltext\\y_NUS_SENTEC_FULLTEXT_TEST_data_preprocessed'
-x_filename = 'data\\preprocessed_data\\sentence_fulltext\\x_NUS_SENTEC_FULLTEXT_preprocessed_TEXT'
-y_filename = 'data\\preprocessed_data\\sentence_fulltext\\y_NUS_SENTEC_FULLTEXT_preprocessed_TEXT'
-'''
-'''
-# [ test_data_size = 772013 ]
-x_test_filename = 'data\\preprocessed_data\\sentence_fulltext\\x_ACM_SENTENC_FULLTEXT_TEST_data_preprocessed.hdf'
-y_test_filename = 'data\\preprocessed_data\\sentence_fulltext\\y_ACM_SENTENC_FULLTEXT_TEST_data_preprocessed'
-x_filename = 'data\\preprocessed_data\\sentence_fulltext\\x_ACM_SENTENC_FULLTEXT_preprocessed_TEXT'
-y_filename = 'data\\preprocessed_data\\sentence_fulltext\\y_ACM_SENTENC_FULLTEXT_preprocessed_TEXT'
-'''
-
+elif args.select_test_set=="nus sentences fulltext":
+    # [ test_data_size = 74219 ]
+    test_data_size = 74219
+    x_test_filename = 'data\\preprocessed_data\\sentence_fulltext\\x_NUS_SENTEC_FULLTEXT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\sentence_fulltext\\y_NUS_SENTEC_FULLTEXT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\sentence_fulltext\\x_NUS_SENTEC_FULLTEXT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\sentence_fulltext\\y_NUS_SENTEC_FULLTEXT_preprocessed_TEXT'
+elif args.select_test_set=="acm sentences fulltext":
+    # [ test_data_size = 770263 ]
+    test_data_size = 770263
+    x_test_filename = 'data\\preprocessed_data\\sentence_fulltext\\x_ACM_SENTENC_FULLTEXT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\sentence_fulltext\\y_ACM_SENTENC_FULLTEXT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\sentence_fulltext\\x_ACM_SENTENC_FULLTEXT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\sentence_fulltext\\y_ACM_SENTENC_FULLTEXT_preprocessed_TEXT'
+elif args.select_test_set=="semeval sentences fulltext":
+    # [ test_data_size = 75726 ]
+    test_data_size = 75726
+    x_test_filename = 'data\\preprocessed_data\\sentence_fulltext\\x_SEMEVAL_SENTEC_FULLTEXT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\sentence_fulltext\\y_SEMEVAL_SENTEC_FULLTEXT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\sentence_fulltext\\x_SEMEVAL_SENTEC_FULLTEXT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\sentence_fulltext\\y_SEMEVAL_SENTEC_FULLTEXT_preprocessed_TEXT'
 
 # Paragraphs fulltext
-'''
-# [ test_data_size = 8804 ]
-x_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_NUS_PARAGRAPH_FULLTEXT_TEST_data_preprocessed.hdf'
-y_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_NUS_PARAGRAPH_FULLTEXT_TEST_data_preprocessed'
-x_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_NUS_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
-y_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_NUS_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
-'''
-'''
-# [ test_data_size = 99432 ]
-x_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_ACM_PARAGRAPH_FULLTEXT_TEST_data_preprocessed.hdf'
-y_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_ACM_PARAGRAPH_FULLTEXT_TEST_data_preprocessed'
-x_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_ACM_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
-y_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_ACM_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
-'''
+elif args.select_test_set=="nus paragraph fulltext":
+    # [ test_data_size = 4744 ]
+    test_data_size = 4744
+    x_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_NUS_PARAGRAPH_FULLTEXT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_NUS_PARAGRAPH_FULLTEXT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_NUS_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_NUS_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
+elif args.select_test_set=="acm paragraph fulltext":
+    # [ test_data_size = 53083 ]
+    test_data_size = 53083
+    x_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_ACM_PARAGRAPH_FULLTEXT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_ACM_PARAGRAPH_FULLTEXT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_ACM_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_ACM_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
+elif args.select_test_set=="semeval paragraph fulltext":
+    # [ test_data_size = 5171 ]
+    test_data_size = 5171
+    x_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_SEMEVAL_PARAGRAPH_FULLTEXT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_SEMEVAL_PARAGRAPH_FULLTEXT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_SEMEVAL_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_SEMEVAL_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
+
+# First 3 paragraphs
+elif args.select_test_set=="nus 220 first 3 paragraphs":
+    # [ test_data_size = 633 - LEN 220 ]
+    MAX_LEN = 220
+    test_data_size = 633
+    x_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\x_NUS_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\y_NUS_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\x_NUS_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\y_NUS_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
+elif args.select_test_set=="nus 400 first 3 paragraphs":
+    # [ test_data_size = 633 - LEN 400 ]
+    test_data_size = 633
+    x_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\x_NUS_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\y_NUS_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\x_NUS_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\y_NUS_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
+elif args.select_test_set=="acm 220 first 3 paragraphs":
+    # [ test_data_size = 6910 - LEN 220 ]
+    MAX_LEN = 220
+    test_data_size = 6910
+    x_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\x_ACM_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\y_ACM_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\x_ACM_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\y_ACM_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
+elif args.select_test_set=="acm 400 first 3 paragraphs":
+    # [ test_data_size = 6910 - LEN 400 ]
+    test_data_size = 6910
+    x_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\x_ACM_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\y_ACM_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\x_ACM_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\y_ACM_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
+elif args.select_test_set=="semeval 220 first 3 paragraphs":
+    # [ test_data_size = 732 - LEN 220 ]
+    MAX_LEN = 220
+    test_data_size = 732
+    x_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\x_SEMEVAL_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\y_SEMEVAL_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\x_SEMEVAL_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\y_SEMEVAL_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
+elif args.select_test_set=="semeval 400 first 3 paragraphs":
+    # [ test_data_size = 732 - LEN 400 ]
+    test_data_size = 732
+    x_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\x_SEMEVAL_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\y_SEMEVAL_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\x_SEMEVAL_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\y_SEMEVAL_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
+
+# Summarization of abstract and fulltext
+elif args.select_test_set=="nus summarization":
+    # [ test_data_size = 211 ]
+    test_data_size = 211
+    x_test_filename = 'data\\preprocessed_data\\summarization_experiment\\x_NUS_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\summarization_experiment\\y_NUS_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\summarization_experiment\\x_NUS_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\summarization_experiment\\y_NUS_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
+elif args.select_test_set=="acm summarization":
+    # [ test_data_size = 2304 ]
+    test_data_size = 2304
+    x_test_filename = 'data\\preprocessed_data\\summarization_experiment\\x_ACM_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\summarization_experiment\\y_ACM_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\summarization_experiment\\x_ACM_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\summarization_experiment\\y_ACM_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
+elif args.select_test_set=="semeval summarization":
+    # [ test_data_size = 244 ]
+    test_data_size = 244
+    x_test_filename = 'data\\preprocessed_data\\summarization_experiment\\x_SEMEVAL_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed.hdf'
+    y_test_filename = 'data\\preprocessed_data\\summarization_experiment\\y_SEMEVAL_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed'
+    x_filename = 'data\\preprocessed_data\\summarization_experiment\\x_SEMEVAL_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
+    y_filename = 'data\\preprocessed_data\\summarization_experiment\\y_SEMEVAL_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
+
 
 # ======================================================================================================================
 # Read train data

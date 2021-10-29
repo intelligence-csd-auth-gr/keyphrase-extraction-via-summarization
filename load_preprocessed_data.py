@@ -1,6 +1,8 @@
+import sys
 import tables
 import numpy as np
 import pandas as pd
+from argparse import ArgumentParser
 from tensorflow.keras.utils import to_categorical
 from keras.preprocessing.sequence import pad_sequences
 
@@ -13,54 +15,66 @@ pd.set_option('display.max_columns', None)
 
 
 # ======================================================================================================================
+# Argument parsing
+# ======================================================================================================================
+
+parser = ArgumentParser()
+
+parser.add_argument("-m", "--mode", type=str,
+                    help="choose which type of data to create (options are: train, validation or test)")
+
+parser.add_argument("-sm", "--sentence_model", type=bool, default=False,
+                    help="choose which data to load (options are: True for data split in sentences or False for whole title and abstracts)")
+
+args = parser.parse_args()
+
+
+# ======================================================================================================================
 # Set batch size and file names in which pre-processed data will be saved
 # ======================================================================================================================
 
-sentence_model = False  # True  False
-
-if sentence_model:
+if args.sentence_model:
     # Set batch size
     batch_size = 352#352  #224  # 1024  # set during pre-processing (set in file preprocessing.py)
     # Set Abstract + Title max word size (text longer than the number will be trancated)
     max_len = 40  # 70  # Used to match the data dimensions for both TRAIN and TEST data (avg = 16)
 
-
-    # Define the file paths and names to save TRAIN data
-    x_filename = 'data\\preprocessed_data\\x_TRAIN_SENTENC_data_preprocessed'
-    y_filename = 'data\\preprocessed_data\\y_TRAIN_SENTENC_data_preprocessed'
-
-    '''
-    # Define the file paths and names to save VALIDATION data to tune model parameters
-    x_filename = 'data\\preprocessed_data\\x_VALIDATION_SENTENC_data_preprocessed'
-    y_filename = 'data\\preprocessed_data\\y_VALIDATION_SENTENC_data_preprocessed'
-    '''
-
-    '''
-    # Define the file paths and names to save TEST data to evaluate the final model
-    x_filename = 'data\\preprocessed_data\\x_TEST_SENTENC_data_preprocessed'
-    y_filename = 'data\\preprocessed_data\\y_TEST_SENTENC_data_preprocessed'
-    '''
+    if args.mode == 'train':
+        # Define the file paths and names to save TRAIN data
+        x_filename = 'data\\preprocessed_data\\x_TRAIN_SENTENC_data_preprocessed'
+        y_filename = 'data\\preprocessed_data\\y_TRAIN_SENTENC_data_preprocessed'
+    elif args.mode == 'validation':
+        # Define the file paths and names to save VALIDATION data to tune model parameters
+        x_filename = 'data\\preprocessed_data\\x_VALIDATION_SENTENC_data_preprocessed'
+        y_filename = 'data\\preprocessed_data\\y_VALIDATION_SENTENC_data_preprocessed'
+    elif args.mode == 'test':
+        # Define the file paths and names to save TEST data to evaluate the final model
+        x_filename = 'data\\preprocessed_data\\x_TEST_SENTENC_data_preprocessed'
+        y_filename = 'data\\preprocessed_data\\y_TEST_SENTENC_data_preprocessed'
+    else:
+        print('WRONG ARGUMENTS! - please fill the argument "-m" or "--mode" with one of the values "train", "validation" or "test"')
+        sys.exit()
 else:
     # Set batch size
     batch_size = 64  # 1024  # set during pre-processing (set in file preprocessing.py)
     # Set Abstract + Title max word size (text longer than the number will be trancated)
     max_len = 400  # 500  # Used to match the data dimensions for both TRAIN and TEST data (max_len = 2763, avg = 147)
 
-    # Define the file paths and names to save TRAIN data
-    x_filename = 'data\\preprocessed_data\\x_TRAIN_data_preprocessed'
-    y_filename = 'data\\preprocessed_data\\y_TRAIN_data_preprocessed'
-
-    '''
-    # Define the file paths and names to save VALIDATION data to tune model parameters
-    x_filename = 'data\\preprocessed_data\\x_VALIDATION_data_preprocessed'
-    y_filename = 'data\\preprocessed_data\\y_VALIDATION_data_preprocessed'
-    '''
-
-    '''
-    # Define the file paths and names to save TEST data to evaluate the final model
-    x_filename = 'data\\preprocessed_data\\x_TEST_data_preprocessed'
-    y_filename = 'data\\preprocessed_data\\y_TEST_data_preprocessed'
-    '''
+    if args.mode == 'train':
+        # Define the file paths and names to save TRAIN data
+        x_filename = 'data\\preprocessed_data\\x_TRAIN_data_preprocessed'
+        y_filename = 'data\\preprocessed_data\\y_TRAIN_data_preprocessed'
+    elif args.mode == 'validation':
+        # Define the file paths and names to save VALIDATION data to tune model parameters
+        x_filename = 'data\\preprocessed_data\\x_VALIDATION_data_preprocessed'
+        y_filename = 'data\\preprocessed_data\\y_VALIDATION_data_preprocessed'
+    elif args.mode == 'test':
+        # Define the file paths and names to save TEST data to evaluate the final model
+        x_filename = 'data\\preprocessed_data\\x_TEST_data_preprocessed'
+        y_filename = 'data\\preprocessed_data\\y_TEST_data_preprocessed'
+    else:
+        print('WRONG ARGUMENTS! - please fill the argument "-m" or "--mode" with one of the values "train", "validation" or "test"')
+        sys.exit()
 
 
 print("Βatch size", batch_size)
