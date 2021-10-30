@@ -33,7 +33,7 @@ Install libraries (Python 3.7)
 
 ### Quick Data Set-up
 
-**Download all datasets (KP20K, NUS, ACM & SemEval) used in the experiments [here](https://drive.google.com/file/d/19v_gSkI0Qo_BXyNFS9VOc3-0GuELf_Fl/view?usp=sharing) OR follow the instructions below to set them up manually.** To place the data in the working project folder, paste the contents of the downloaded ``root_folder/`` folder into the root folder of the project. The downloaded folder contains all necessary folders under the ``/data/preprocessed_data/``, ``GloVe`` and ``pretrained_models`` folders, so skip the folder creation step (see also section "Folders" below).
+**Download all datasets (KP20K, NUS, ACM & SemEval) used in the experiments [here](https://drive.google.com/file/d/1iy_HNvKS4cfPZwrW3Rrsk53GKKOvbDjE/view?usp=sharing) OR follow the instructions below to set them up manually.** To place the data in the working project folder, paste the contents of the downloaded ``root_folder/`` folder into the root folder of the project. The downloaded folder contains all necessary folders under the ``/data/preprocessed_data/``, ``GloVe`` and ``pretrained_models`` folders, so skip the folder creation step (see also section "Folders" below).
 
 ### Manual Data Set-up
 
