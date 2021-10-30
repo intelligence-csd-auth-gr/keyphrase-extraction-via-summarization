@@ -8,7 +8,7 @@ import pandas as pd
 from string import digits
 from pandas import json_normalize
 from tensorflow.keras.utils import to_categorical
-from keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.stem.snowball import SnowballStemmer as Stemmer
 
