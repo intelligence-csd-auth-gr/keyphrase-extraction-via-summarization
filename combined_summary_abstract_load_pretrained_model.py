@@ -37,14 +37,14 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 parser = ArgumentParser()
 
-parser.add_argument("-sts", "--select_test_set", type=str, default=False,
+parser.add_argument("-sts", "--select_test_set", type=str,
                     help="select the test set to evaluate the model (options are: nus, acm or semeval)")
 
-parser.add_argument("-pmp", "--pretrained_model_path", type=str, default=False,
+parser.add_argument("-pmp", "--pretrained_model_path", type=str,
                     help="the path and the name of the pretrained model")
 
-parser.add_argument("-sm", "--sentence_model", type=bool, default=False,
-                    help="choose which data to load (options are: True for sentence model or False for whole title and abstracts model)")
+parser.add_argument("-sm", "--sentence_model", type=int, default=0,
+                    help="choose which data to load (options are: '1' for sentence model or '0' for whole title and abstracts model)")
 
 args = parser.parse_args()
 

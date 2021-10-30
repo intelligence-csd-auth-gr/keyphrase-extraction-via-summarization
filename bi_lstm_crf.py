@@ -1,11 +1,12 @@
 import time
+import sys
 import tables  # load compressed data files
 import numpy as np
 import pandas as pd
 from tf2crf import CRF
 from numpy import load
 import tensorflow as tf
-import keras.backend as K
+import tensorflow.keras.backend as K
 import sequence_evaluation
 import traditional_evaluation
 from datetime import timedelta
@@ -74,7 +75,7 @@ session = InteractiveSession(config=config)
 
 parser = ArgumentParser()
 
-parser.add_argument("-sts", "--select_test_set", type=str, default=False,
+parser.add_argument("-sts", "--select_test_set", type=str,
                     help="select the test set to evaluate the model (options are:"
                          "'kp20k_full_abstract'"
                          "'nus_full_abstract'"
@@ -107,7 +108,7 @@ parser.add_argument("-sts", "--select_test_set", type=str, default=False,
                          ")"
                     )
 
-parser.add_argument("-sm", "--sentence_model", type=bool, default=False,
+parser.add_argument("-sm", "--sentence_model", type=int, default=0,
                     help="choose which data to load (options are: True for sentence model or False for whole title and abstracts model)")
 
 args = parser.parse_args()
@@ -175,28 +176,28 @@ else:
 # ======================================================================================================================
 
 # Full abstract
-if args.select_test_set=="kp20k full abstract":
+if args.select_test_set=="kp20k_full_abstract":
     # [ test_data_size = 20000 ]
     test_data_size = 20000
     x_test_filename = 'data\\preprocessed_data\\data_train1\\x_TEST_data_preprocessed.hdf'  # kp20k
     y_test_filename = 'data\\preprocessed_data\\data_train1\\y_TEST_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\data_train1\\x_TEST_preprocessed_TEXT'  # kp20k
     y_filename = 'data\\preprocessed_data\\data_train1\\y_TEST_preprocessed_TEXT'  # kp20k
-elif args.select_test_set=="nus full abstract":
+elif args.select_test_set=="nus_full_abstract":
     # [ test_data_size = 211 ]
     test_data_size = 211
     x_test_filename = 'data\\preprocessed_data\\full_abstract\\x_NUS_FULL_ABSTRACT_TEST_data_preprocessed.hdf'
     y_test_filename = 'data\\preprocessed_data\\full_abstract\\y_NUS_FULL_ABSTRACT_TEST_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\full_abstract\\x_NUS_FULL_ABSTRACT_preprocessed_TEXT'
     y_filename = 'data\\preprocessed_data\\full_abstract\\y_NUS_FULL_ABSTRACT_preprocessed_TEXT'
-elif args.select_test_set=="acm full abstract":
+elif args.select_test_set=="acm_full_abstract":
     # [ test_data_size = 2304 ]
     test_data_size = 2304
     x_test_filename = 'data\\preprocessed_data\\full_abstract\\x_ACM_FULL_ABSTRACT_TEST_vectors.hdf'
     y_test_filename = 'data\\preprocessed_data\\full_abstract\\y_ACM_FULL_ABSTRACT_TEST_vectors'
     x_filename = 'data\\preprocessed_data\\full_abstract\\x_ACM_FULL_ABSTRACT_preprocessed_TEXT'
     y_filename = 'data\\preprocessed_data\\full_abstract\\y_ACM_FULL_ABSTRACT_preprocessed_TEXT'
-elif args.select_test_set=="semeval full abstract":
+elif args.select_test_set=="semeval_full_abstract":
     # [ test_data_size = 244 ]
     test_data_size = 244
     x_test_filename = 'data\\preprocessed_data\\full_abstract\\x_SEMEVAL_FULL_ABSTRACT_TEST_data_preprocessed.hdf'
@@ -205,28 +206,28 @@ elif args.select_test_set=="semeval full abstract":
     y_filename = 'data\\preprocessed_data\\full_abstract\\y_SEMEVAL_FULL_ABSTRACT_preprocessed_TEXT'
 
 # Sentences abstract
-elif args.select_test_set=="kp20k sentences abstract":
+elif args.select_test_set=="kp20k_sentences_abstract":
     # [ test_data_size = 155801 ]
     test_data_size = 155801
     x_test_filename = 'data\\preprocessed_data\\x_TEST_SENTENC_data_preprocessed.hdf'  # kp20k
     y_test_filename = 'data\\preprocessed_data\\y_TEST_SENTENC_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\x_TEST_SENTENC_preprocessed_TEXT'  # kp20k
     y_filename = 'data\\preprocessed_data\\y_TEST_SENTENC_preprocessed_TEXT'  # kp20k
-elif args.select_test_set=="nus sentences abstract":
+elif args.select_test_set=="nus_sentences_abstract":
     # [ test_data_size = 1673 ]
     test_data_size = 1673
     x_test_filename = 'data\\preprocessed_data\\sentence_abstract\\x_NUS_SENTEC_ABSTRACT_TEST_data_preprocessed.hdf'
     y_test_filename = 'data\\preprocessed_data\\sentence_abstract\\y_NUS_SENTEC_ABSTRACT_TEST_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\sentence_abstract\\x_NUS_SENTEC_ABSTRACT_preprocessed_TEXT'
     y_filename = 'data\\preprocessed_data\\sentence_abstract\\y_NUS_SENTEC_ABSTRACT_preprocessed_TEXT'
-elif args.select_test_set=="acm sentences abstract":
+elif args.select_test_set=="acm_sentences_abstract":
     # [ test_data_size = 17481 ]
     test_data_size = 17481
     x_test_filename = 'data\\preprocessed_data\\sentence_abstract\\x_ACM_SENTENC_ABSTRACT_TEST_data_preprocessed.hdf'
     y_test_filename = 'data\\preprocessed_data\\sentence_abstract\\y_ACM_SENTENC_ABSTRACT_TEST_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\sentence_abstract\\x_ACM_SENTENC_ABSTRACT_preprocessed_TEXT'
     y_filename = 'data\\preprocessed_data\\sentence_abstract\\y_ACM_SENTENC_ABSTRACT_preprocessed_TEXT'
-elif args.select_test_set=="semeval sentences abstract":
+elif args.select_test_set=="semeval_sentences_abstract":
     # [ test_data_size = 1979 ]
     test_data_size = 1979
     x_test_filename = 'data\\preprocessed_data\\sentence_abstract\\x_SEMEVAL_SENTEC_ABSTRACT_TEST_data_preprocessed.hdf'
@@ -235,21 +236,21 @@ elif args.select_test_set=="semeval sentences abstract":
     y_filename = 'data\\preprocessed_data\\sentence_abstract\\y_SEMEVAL_SENTEC_ABSTRACT_preprocessed_TEXT'
 
 # Sentences fulltext
-elif args.select_test_set=="nus sentences fulltext":
+elif args.select_test_set=="nus_sentences_fulltext":
     # [ test_data_size = 74219 ]
     test_data_size = 74219
     x_test_filename = 'data\\preprocessed_data\\sentence_fulltext\\x_NUS_SENTEC_FULLTEXT_TEST_data_preprocessed.hdf'
     y_test_filename = 'data\\preprocessed_data\\sentence_fulltext\\y_NUS_SENTEC_FULLTEXT_TEST_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\sentence_fulltext\\x_NUS_SENTEC_FULLTEXT_preprocessed_TEXT'
     y_filename = 'data\\preprocessed_data\\sentence_fulltext\\y_NUS_SENTEC_FULLTEXT_preprocessed_TEXT'
-elif args.select_test_set=="acm sentences fulltext":
+elif args.select_test_set=="acm_sentences_fulltext":
     # [ test_data_size = 770263 ]
     test_data_size = 770263
     x_test_filename = 'data\\preprocessed_data\\sentence_fulltext\\x_ACM_SENTENC_FULLTEXT_TEST_data_preprocessed.hdf'
     y_test_filename = 'data\\preprocessed_data\\sentence_fulltext\\y_ACM_SENTENC_FULLTEXT_TEST_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\sentence_fulltext\\x_ACM_SENTENC_FULLTEXT_preprocessed_TEXT'
     y_filename = 'data\\preprocessed_data\\sentence_fulltext\\y_ACM_SENTENC_FULLTEXT_preprocessed_TEXT'
-elif args.select_test_set=="semeval sentences fulltext":
+elif args.select_test_set=="semeval_sentences_fulltext":
     # [ test_data_size = 75726 ]
     test_data_size = 75726
     x_test_filename = 'data\\preprocessed_data\\sentence_fulltext\\x_SEMEVAL_SENTEC_FULLTEXT_TEST_data_preprocessed.hdf'
@@ -258,21 +259,21 @@ elif args.select_test_set=="semeval sentences fulltext":
     y_filename = 'data\\preprocessed_data\\sentence_fulltext\\y_SEMEVAL_SENTEC_FULLTEXT_preprocessed_TEXT'
 
 # Paragraphs fulltext
-elif args.select_test_set=="nus paragraph fulltext":
+elif args.select_test_set=="nus_paragraph_fulltext":
     # [ test_data_size = 4744 ]
     test_data_size = 4744
     x_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_NUS_PARAGRAPH_FULLTEXT_TEST_data_preprocessed.hdf'
     y_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_NUS_PARAGRAPH_FULLTEXT_TEST_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_NUS_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
     y_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_NUS_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
-elif args.select_test_set=="acm paragraph fulltext":
+elif args.select_test_set=="acm_paragraph_fulltext":
     # [ test_data_size = 53083 ]
     test_data_size = 53083
     x_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_ACM_PARAGRAPH_FULLTEXT_TEST_data_preprocessed.hdf'
     y_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_ACM_PARAGRAPH_FULLTEXT_TEST_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_ACM_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
     y_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_ACM_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
-elif args.select_test_set=="semeval paragraph fulltext":
+elif args.select_test_set=="semeval_paragraph_fulltext":
     # [ test_data_size = 5171 ]
     test_data_size = 5171
     x_test_filename = 'data\\preprocessed_data\\paragraph_fulltext\\x_SEMEVAL_PARAGRAPH_FULLTEXT_TEST_data_preprocessed.hdf'
@@ -281,7 +282,7 @@ elif args.select_test_set=="semeval paragraph fulltext":
     y_filename = 'data\\preprocessed_data\\paragraph_fulltext\\y_SEMEVAL_PARAGRAPH_FULLTEXT_preprocessed_TEXT'
 
 # First 3 paragraphs
-elif args.select_test_set=="nus 220 first 3 paragraphs":
+elif args.select_test_set=="nus_220_first_3_paragraphs":
     # [ test_data_size = 633 - LEN 220 ]
     MAX_LEN = 220
     test_data_size = 633
@@ -289,14 +290,14 @@ elif args.select_test_set=="nus 220 first 3 paragraphs":
     y_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\y_NUS_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\x_NUS_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
     y_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\y_NUS_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
-elif args.select_test_set=="nus 400 first 3 paragraphs":
+elif args.select_test_set=="nus_400_first_3_paragraphs":
     # [ test_data_size = 633 - LEN 400 ]
     test_data_size = 633
     x_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\x_NUS_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed.hdf'
     y_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\y_NUS_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\x_NUS_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
     y_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\y_NUS_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
-elif args.select_test_set=="acm 220 first 3 paragraphs":
+elif args.select_test_set=="acm_220_first_3_paragraphs":
     # [ test_data_size = 6910 - LEN 220 ]
     MAX_LEN = 220
     test_data_size = 6910
@@ -304,14 +305,14 @@ elif args.select_test_set=="acm 220 first 3 paragraphs":
     y_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\y_ACM_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\x_ACM_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
     y_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\y_ACM_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
-elif args.select_test_set=="acm 400 first 3 paragraphs":
+elif args.select_test_set=="acm_400_first_3_paragraphs":
     # [ test_data_size = 6910 - LEN 400 ]
     test_data_size = 6910
     x_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\x_ACM_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed.hdf'
     y_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\y_ACM_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\x_ACM_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
     y_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\y_ACM_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
-elif args.select_test_set=="semeval 220 first 3 paragraphs":
+elif args.select_test_set=="semeval_220_first_3_paragraphs":
     # [ test_data_size = 732 - LEN 220 ]
     MAX_LEN = 220
     test_data_size = 732
@@ -319,7 +320,7 @@ elif args.select_test_set=="semeval 220 first 3 paragraphs":
     y_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\y_SEMEVAL_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\x_SEMEVAL_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
     y_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\220\\y_SEMEVAL_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
-elif args.select_test_set=="semeval 400 first 3 paragraphs":
+elif args.select_test_set=="semeval_400_first_3_paragraphs":
     # [ test_data_size = 732 - LEN 400 ]
     test_data_size = 732
     x_test_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\x_SEMEVAL_FIRST_PARAGRAPHS_FULLTEXT_TEST_data_preprocessed.hdf'
@@ -328,27 +329,30 @@ elif args.select_test_set=="semeval 400 first 3 paragraphs":
     y_filename = 'data\\preprocessed_data\\first_paragraphs_fulltext\\400\\y_SEMEVAL_FIRST_PARAGRAPHS_FULLTEXT_preprocessed_TEXT'
 
 # Summarization of abstract and fulltext
-elif args.select_test_set=="nus summarization":
+elif args.select_test_set=="nus_summarization":
     # [ test_data_size = 211 ]
     test_data_size = 211
     x_test_filename = 'data\\preprocessed_data\\summarization_experiment\\x_NUS_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed.hdf'
     y_test_filename = 'data\\preprocessed_data\\summarization_experiment\\y_NUS_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\summarization_experiment\\x_NUS_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
     y_filename = 'data\\preprocessed_data\\summarization_experiment\\y_NUS_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
-elif args.select_test_set=="acm summarization":
+elif args.select_test_set=="acm_summarization":
     # [ test_data_size = 2304 ]
     test_data_size = 2304
     x_test_filename = 'data\\preprocessed_data\\summarization_experiment\\x_ACM_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed.hdf'
     y_test_filename = 'data\\preprocessed_data\\summarization_experiment\\y_ACM_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\summarization_experiment\\x_ACM_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
     y_filename = 'data\\preprocessed_data\\summarization_experiment\\y_ACM_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
-elif args.select_test_set=="semeval summarization":
+elif args.select_test_set=="semeval_summarization":
     # [ test_data_size = 244 ]
     test_data_size = 244
     x_test_filename = 'data\\preprocessed_data\\summarization_experiment\\x_SEMEVAL_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed.hdf'
     y_test_filename = 'data\\preprocessed_data\\summarization_experiment\\y_SEMEVAL_FULLTEXT_SUMMARIZATION_TEST_data_preprocessed'
     x_filename = 'data\\preprocessed_data\\summarization_experiment\\x_SEMEVAL_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
     y_filename = 'data\\preprocessed_data\\summarization_experiment\\y_SEMEVAL_FULLTEXT_SUMMARIZATION_preprocessed_TEXT'
+else:
+    print('WRONG ARGUMENTS! - please fill the argument "-sts" or "--select_test_set" with one of the proper values')
+    sys.exit()
 
 
 # ======================================================================================================================

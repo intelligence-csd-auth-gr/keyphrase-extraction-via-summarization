@@ -1,9 +1,9 @@
 import numpy as np
-import keras
+import tensorflow.keras
 import tables  # load compressed data files
 from tensorflow import constant  # used to convert array/list to a Keras Tensor
 
-class DataGenerator(keras.utils.Sequence):
+class DataGenerator(tensorflow.keras.utils.Sequence):
     'Generates data for Keras - the first batch is not properly read and used, so it reads it again (2 times)'
     def __init__(self, x_filename, y_filename, numb_batches_per_epoch, batch_size=32, shuffle=False):
         """
