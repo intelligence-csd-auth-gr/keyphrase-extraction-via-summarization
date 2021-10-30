@@ -181,13 +181,13 @@ python preprocessing_sentences.py --mode test
 Change sequence size of string data without needing to pre-process data again (the ``mode`` argument is used to select which dataset to load and ``sentence_model`` defines whether to load data split in sentences or as a whole)
 
 ```bash
-python load_preprocessed_data.py --mode train --sentence_model False
+python load_preprocessed_data.py --mode train --sentence_model 0
 ```
 ```bash
-python load_preprocessed_data.py --mode validation --sentence_model False
+python load_preprocessed_data.py --mode validation --sentence_model 0
 ```
 ```bash
-python load_preprocessed_data.py --mode test --sentence_model False
+python load_preprocessed_data.py --mode test --sentence_model 0
 ```
 
 
@@ -241,7 +241,7 @@ Create a folder with the name ``pretrained_models/checkpoint/`` to store the tra
 
 
 ```bash
-python bi_lstm_crf.py --sentence_model False --select_test_set acm_full_abstract
+python bi_lstm_crf.py --sentence_model 0 --select_test_set acm_full_abstract
 ```
 
 The ``select_test_set`` argument can take the following values:
@@ -263,13 +263,13 @@ The ``select_test_set`` argument can take the following values:
 Load a **trained model** (the ``select_test_set`` argument is used to select which test dataset to use, ``sentence_model`` defines whether to train a sentence model, and, ``pretrained_model_path`` defines the path and the pre-trained model). The values of ``select_test_set`` and ``sentence_model`` arguments are the same as seen on the table above.
 
 ```bash
-python load_pretrained_model.py  --sentence_model False --select_test_set acm_full_abstract --pretrained_model_path pretrained_models/checkpoint/model.03.h5
+python load_pretrained_model.py  --sentence_model 0 --select_test_set acm_full_abstract --pretrained_model_path pretrained_models/checkpoint/model.03.h5
 ```
 
 Load **trained models** for the experiments of the **combined predictions of Abstract & Summaries** (the ``select_test_set`` argument is used to select which test dataset to use, ``sentence_model`` defines whether to train a sentence model, and, ``pretrained_model_path`` defines the path and the pre-trained model). In this case, the ``select_test_set`` argument can take be either ``nus``, ``acm`` or ``semeval``.
 
 ```bash
-python combined_summary_abstract_load_pretrained_model.py --sentence_model False --select_test_set acm --pretrained_model_path pretrained_models/checkpoint/model.03.h5
+python combined_summary_abstract_load_pretrained_model.py --sentence_model 0 --select_test_set acm --pretrained_model_path pretrained_models/checkpoint/model.03.h5
 ```
 
 
