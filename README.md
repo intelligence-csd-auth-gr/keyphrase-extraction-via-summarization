@@ -14,7 +14,7 @@ Automatically extracting keyphrases from scholarly documents leads to a valuable
 
 
 
-## Libraries Installation
+## Dependencies Installation
 
 Clone the project
 
